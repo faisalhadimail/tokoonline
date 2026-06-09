@@ -18,6 +18,7 @@ import {
   Info,
   Building2,
   MapPinned,
+  Gift,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -79,6 +80,13 @@ export default function CheckoutPage() {
   const voucherDiscount = useCartStore((s) => s.voucherDiscount);
   const clearCart = useCartStore((s) => s.clearCart);
   const user = useAuthStore((s) => s.user);
+
+  // Promo state
+  const [promoInput, setPromoInput] = useState('');
+  const [promoDiscount, setPromoDiscount] = useState(0);
+  const [promoShippingDiscount, setPromoShippingDiscount] = useState(0);
+  const [appliedPromo, setAppliedPromo] = useState<{ code: string; name: string; type: string } | null>(null);
+  const [promoLoading, setPromoLoading] = useState(false);
 
   const [step, setStep] = useState<Step>(1);
   const [selectedCourier, setSelectedCourier] = useState('');
@@ -212,7 +220,37 @@ export default function CheckoutPage() {
 
   // Apply free shipping threshold
   const baseShippingCost = activeCourier?.price || 0;
-  const grandTotal = Math.max(0, getTotal() + baseShippingCost);
+  const shippingAfterPromo = Math.max(0, baseShippingCost - promoShippingDiscount);
+  const totalDiscount = voucherDiscount + promoDiscount;
+  const grandTotal = Math.max(0, getSubtotal() - totalDiscount + shippingAfterPromo);
+
+  const handleApplyPromo = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!promoInput.trim()) return;
+    setPromoLoading(true);
+    const productIds = items.map((i) => i.productId).join(',');
+    fetch(`/api/promos/validate?code=${encodeURIComponent(promoInput.trim())}&subtotal=${getSubtotal()}&shippingCost=${baseShippingCost}&productIds=${productIds}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.valid) {
+          setPromoDiscount(data.discount || 0);
+          setPromoShippingDiscount(data.shippingDiscount || 0);
+          setAppliedPromo({ code: data.promo.code, name: data.promo.name, type: data.promo.type });
+          toast.success(`Promo ${data.promo.code} berhasil diterapkan!`);
+          setPromoInput('');
+        } else {
+          toast.error(data.message || 'Promo tidak valid');
+        }
+      })
+      .catch(() => toast.error('Gagal memvalidasi promo'))
+      .finally(() => setPromoLoading(false));
+  };
+
+  const removePromo = () => {
+    setPromoDiscount(0);
+    setPromoShippingDiscount(0);
+    setAppliedPromo(null);
+  };
 
   const updateForm = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -323,10 +361,11 @@ export default function CheckoutPage() {
       courier: activeCourier.name || activeCourier.code,
       courierCode: activeCourier.code,
       courierService: activeCourier.estimation || '',
-      shippingCost: baseShippingCost,
+      shippingCost: shippingAfterPromo,
       paymentMethod: selectedPayment,
       voucherCode,
-      discount: voucherDiscount,
+      promoCode: appliedPromo?.code || null,
+      discount: totalDiscount,
       subtotal: getSubtotal(),
       total: grandTotal,
     };
@@ -998,16 +1037,19 @@ export default function CheckoutPage() {
                   <span className="text-stone-500">Subtotal</span>
                   <span className="font-medium text-stone-900">{formatRupiah(getSubtotal())}</span>
                 </div>
-                {voucherDiscount > 0 && (
+                {(totalDiscount > 0 || promoShippingDiscount > 0) && (
                   <div className="flex justify-between">
                     <span className="text-stone-500">Diskon</span>
-                    <span className="font-medium text-emerald-600">-{formatRupiah(voucherDiscount)}</span>
+                    <span className="font-medium text-emerald-600">-{formatRupiah(totalDiscount)}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
                   <span className="text-stone-500">Ongkir ({activeCourier?.name || 'Pilih kurir'})</span>
                   <span className="font-medium text-stone-900">
-                    {baseShippingCost === 0 ? <span className="text-emerald-600">Gratis</span> : formatRupiah(baseShippingCost)}
+                    {shippingAfterPromo === 0 ? <span className="text-emerald-600">Gratis</span> : formatRupiah(shippingAfterPromo)}
+                    {promoShippingDiscount > 0 && shippingAfterPromo > 0 && (
+                      <span className="ml-1 text-xs text-stone-400 line-through">{formatRupiah(baseShippingCost)}</span>
+                    )}
                   </span>
                 </div>
 
@@ -1025,6 +1067,38 @@ export default function CheckoutPage() {
                   <p className="text-[10px] text-emerald-700">Ongkir real-time via api.co.id</p>
                 </div>
               )}
+
+              {/* Promo Code Input */}
+
+              <div className="mt-4">
+                <h4 className="mb-2 flex items-center gap-1.5 text-sm font-medium text-stone-700">
+                  <Gift className="h-4 w-4 text-rose-600" /> Kode Promo
+                </h4>
+                {appliedPromo ? (
+                  <div className="rounded-lg border border-violet-200 bg-violet-50 p-2.5">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-medium text-violet-700">{appliedPromo.code} — {appliedPromo.name}</p>
+                        {promoDiscount > 0 && <p className="text-[10px] text-violet-600">Diskon: -{formatRupiah(promoDiscount)}</p>}
+                        {promoShippingDiscount > 0 && <p className="text-[10px] text-emerald-600">Potongan Ongkir: -{formatRupiah(promoShippingDiscount)}</p>}
+                      </div>
+                      <button onClick={removePromo} className="text-violet-400 hover:text-violet-600 text-xs">Hapus</button>
+                    </div>
+                  </div>
+                ) : (
+                  <form onSubmit={handleApplyPromo} className="flex gap-2">
+                    <Input
+                      placeholder="Masukkan kode promo"
+                      value={promoInput}
+                      onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
+                      className="h-9 text-xs border-stone-300 uppercase"
+                    />
+                    <Button type="submit" size="sm" className="bg-rose-600 text-white hover:bg-rose-700 h-9 px-3 text-xs" disabled={promoLoading}>
+                      {promoLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Pakai'}
+                    </Button>
+                  </form>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>
