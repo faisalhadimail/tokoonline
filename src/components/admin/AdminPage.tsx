@@ -9,6 +9,7 @@ import VoucherManager from './VoucherManager';
 import PromoManager from './PromoManager';
 import BlogManager from './BlogManager';
 import SettingsManager from './SettingsManager';
+import HomepageSettings from './HomepageSettings';
 import { BarChart3 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -47,6 +48,8 @@ export default function AdminPage() {
         return <PromoManager />;
       case 'blog':
         return <BlogManager />;
+      case 'homepage':
+        return <HomepageSettings />;
       case 'analytics':
         return <AnalyticsPlaceholder />;
       case 'settings':

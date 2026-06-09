@@ -371,6 +371,12 @@ model StoreSettings {
   showTestimonials Boolean @default(true)
   showNewsletter Boolean @default(true)
 
+  // Homepage Settings
+  heroSlides       String   @default("[]") // JSON: [{title, subtitle, badge, badgeColor, buttonText, image, enabled}]
+  homepageSections String   @default("[]") // JSON: [{id, label, enabled, order}]
+  testimonialsData  String   @default("[]") // JSON: [{name, avatar, rating, text, location}]
+  brandPartners    String   @default("[]") // JSON: [{name, logo, enabled}]
+
   // Notifications
   emailNewOrder  Boolean  @default(true)
   emailLowStock  Boolean  @default(true)

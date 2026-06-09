@@ -15,6 +15,7 @@ import {
   Bell,
   Menu,
   X,
+  Home,
 } from 'lucide-react';
 import { useAdminStore, useAuthStore } from '@/stores';
 import { cn } from '@/lib/utils';
@@ -31,6 +32,7 @@ const navItems = [
   { id: 'vouchers', label: 'Vouchers', icon: Ticket, view: 'admin-vouchers' as const },
   { id: 'promos', label: 'Promos', icon: Gift, view: 'admin-promos' as const },
   { id: 'blog', label: 'Blog', icon: FileText, view: 'admin-blog' as const },
+  { id: 'homepage', label: 'Homepage', icon: Home, view: 'admin' as const },
   { id: 'analytics', label: 'Analytics', icon: BarChart3, view: 'admin' as const },
   { id: 'settings', label: 'Settings', icon: Settings, view: 'admin' as const },
 ];
@@ -159,7 +161,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               <Menu className="h-5 w-5" />
             </Button>
             <h2 className="text-lg font-semibold text-gray-900 capitalize">
-              {activeTab === 'overview' ? 'Dashboard' : activeTab}
+              {activeTab === 'overview' ? 'Dashboard' : activeTab === 'homepage' ? 'Homepage' : activeTab}
             </h2>
           </div>
 

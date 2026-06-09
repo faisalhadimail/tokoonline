@@ -58,6 +58,10 @@ export async function GET() {
       ...settings,
       shippingMethods: JSON.parse(settings.shippingMethods || '[]'),
       paymentMethods: JSON.parse(settings.paymentMethods || '[]'),
+      heroSlides: JSON.parse((settings as Record<string, unknown>).heroSlides as string || '[]'),
+      homepageSections: JSON.parse((settings as Record<string, unknown>).homepageSections as string || '[]'),
+      testimonialsData: JSON.parse((settings as Record<string, unknown>).testimonialsData as string || '[]'),
+      brandPartners: JSON.parse((settings as Record<string, unknown>).brandPartners as string || '[]'),
     };
 
     return NextResponse.json(parsed);
@@ -77,7 +81,7 @@ export async function PUT(request: Request) {
     if (!settings) {
       settings = await db.storeSettings.create({ data: body });
     } else {
-      const { shippingMethods, paymentMethods, ...rest } = body;
+      const { shippingMethods, paymentMethods, heroSlides, homepageSections, testimonialsData, brandPartners, ...rest } = body;
       const updateData: Record<string, unknown> = { ...rest };
 
       // Stringify JSON fields if they are arrays
@@ -86,6 +90,18 @@ export async function PUT(request: Request) {
       }
       if (paymentMethods !== undefined) {
         updateData.paymentMethods = JSON.stringify(paymentMethods);
+      }
+      if (heroSlides !== undefined) {
+        updateData.heroSlides = JSON.stringify(heroSlides);
+      }
+      if (homepageSections !== undefined) {
+        updateData.homepageSections = JSON.stringify(homepageSections);
+      }
+      if (testimonialsData !== undefined) {
+        updateData.testimonialsData = JSON.stringify(testimonialsData);
+      }
+      if (brandPartners !== undefined) {
+        updateData.brandPartners = JSON.stringify(brandPartners);
       }
 
       settings = await db.storeSettings.update({
@@ -98,6 +114,10 @@ export async function PUT(request: Request) {
       ...settings,
       shippingMethods: JSON.parse(settings.shippingMethods || '[]'),
       paymentMethods: JSON.parse(settings.paymentMethods || '[]'),
+      heroSlides: JSON.parse((settings as Record<string, unknown>).heroSlides as string || '[]'),
+      homepageSections: JSON.parse((settings as Record<string, unknown>).homepageSections as string || '[]'),
+      testimonialsData: JSON.parse((settings as Record<string, unknown>).testimonialsData as string || '[]'),
+      brandPartners: JSON.parse((settings as Record<string, unknown>).brandPartners as string || '[]'),
     };
 
     return NextResponse.json(parsed);

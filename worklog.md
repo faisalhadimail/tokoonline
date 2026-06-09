@@ -53,3 +53,39 @@ Stage Summary:
 - Orders now successfully enter the system with auto-created guest users
 - Promo/voucher tracking works on order creation
 - 11 total orders in database (8 seeded + 3 new test orders)
+
+---
+Task ID: 7
+Agent: Main Agent
+Task: Add Pengaturan Homepage (Homepage Settings) to admin panel
+
+Work Log:
+- Added 4 new JSON fields to Prisma schema StoreSettings model: heroSlides, homepageSections, testimonialsData, brandPartners
+- Pushed schema changes to PostgreSQL database
+- Updated `/api/settings` route GET and PUT to parse/stringify the new JSON fields
+- Created `src/components/admin/HomepageSettings.tsx` with 4 sub-sections:
+  - Hero Banner Manager: Add/edit/delete/reorder hero slides with preview, badge color picker, image URL
+  - Sections Manager: Toggle visibility and reorder 9 homepage sections (hero, categories, flash-sale, featured, promo-banners, new-arrivals, testimonials, brands, newsletter)
+  - Testimonials Manager: Add/edit/delete testimonials with rating stars, name, avatar, location, text
+  - Brand Partners Manager: Add/remove brands with toggle, inline rename, live preview
+- Added "Homepage" tab to admin sidebar navigation (AdminLayout.tsx) with Home icon
+- Added 'homepage' case to AdminPage.tsx renderContent switch
+- Rewrote HomePage.tsx to be settings-driven:
+  - Hero slides, testimonials, brands, and section visibility now read from settings API
+  - Falls back to sensible defaults when no config exists
+  - Sections render in configured order
+  - Disabled sections are hidden
+- Updated seed script with default homepage settings data
+- Fixed lint warnings (renamed lucide Image icon import)
+- Verified via agent-browser:
+  - Homepage renders correctly with all sections from settings
+  - Admin Homepage Settings page shows all 4 sub-sections
+  - Hero edit form with title, subtitle, badge, color picker, button text, image URL
+  - Section manager with 9 sections, reorder buttons, and toggle switches
+  - Testimonials grid with edit/delete/add functionality
+  - Brand partners list with add/toggle/delete and preview
+
+Stage Summary:
+- Full Homepage Settings admin feature built and verified
+- Files created/modified: HomepageSettings.tsx (new), AdminPage.tsx, AdminLayout.tsx, HomePage.tsx, settings/route.ts, seed.ts, schema.prisma
+- All settings persisted to database and read dynamically by storefront homepage
