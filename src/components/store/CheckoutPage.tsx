@@ -130,7 +130,7 @@ export default function CheckoutPage() {
     notes: '',
   });
 
-  // Fetch store settings (to get origin village code & free shipping min)
+  // Fetch store settings (to get origin village code for shipping API)
   const { data: storeSettings } = useQuery({
     queryKey: ['settings'],
     queryFn: () => fetch('/api/settings').then((r) => r.json()),
@@ -138,7 +138,6 @@ export default function CheckoutPage() {
   });
 
   const storeOriginCode = storeSettings?.originVillageCode || '';
-  const freeShippingMin = 0; // removed, now using promo system for shipping discounts
 
   // Calculate total weight from cart items (in kg)
   const totalWeight = useMemo(() => {

@@ -72,10 +72,7 @@ export default function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-stone-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
-      {/* Top bar */}
-      <div className="bg-stone-900 px-4 py-1.5 text-center text-xs text-stone-300">
-        🎉 Gratis Ongkir untuk pembelian pertama! Gunakan kode: GRATISONGKIR
-      </div>
+      {/* Top bar - dynamic promo banner (shown when active promos exist) */}
 
       {/* Main nav */}
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4">

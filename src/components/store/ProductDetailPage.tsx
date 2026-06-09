@@ -363,7 +363,7 @@ export default function ProductDetailPage() {
           <div className="mt-6 grid grid-cols-3 gap-3">
             <div className="flex flex-col items-center gap-1.5 rounded-lg bg-stone-50 p-3">
               <Truck className="h-5 w-5 text-rose-600" />
-              <span className="text-[11px] text-stone-600">Gratis Ongkir</span>
+              <span className="text-[11px] text-stone-600">Pengiriman Cepat</span>
             </div>
             <div className="flex flex-col items-center gap-1.5 rounded-lg bg-stone-50 p-3">
               <Shield className="h-5 w-5 text-rose-600" />
@@ -493,7 +493,7 @@ export default function ProductDetailPage() {
                 <ul className="space-y-2">
                   <li className="flex items-start gap-2">
                     <Truck className="mt-0.5 h-4 w-4 flex-shrink-0 text-rose-600" />
-                    <span>Gratis ongkir untuk pembelian minimal Rp 300.000</span>
+                    <span>Periksa promo ongkir di halaman checkout</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Truck className="mt-0.5 h-4 w-4 flex-shrink-0 text-rose-600" />

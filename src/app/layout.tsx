@@ -12,7 +12,7 @@ const geistSans = Geist({
 export const metadata: Metadata = {
   title: "LUXE FASHION - Toko Fashion Online Terlengkap",
   description:
-    "Belanja fashion terbaru dengan harga terbaik. Koleksi pria, wanita, anak, hijab, sepatu, tas, dan aksesoris premium. Gratis ongkir dan promo menarik!",
+    "Belanja fashion terbaru dengan harga terbaik. Koleksi pria, wanita, anak, hijab, sepatu, tas, dan aksesoris premium. Promo menarik setiap hari!",
   keywords: [
     "fashion online",
     "toko baju online",

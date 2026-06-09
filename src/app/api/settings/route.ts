@@ -23,7 +23,7 @@ export async function GET() {
           facebook: 'https://facebook.com/luxefashion',
           tiktok: 'https://tiktok.com/@luxefashion',
           metaTitle: 'LUXE Fashion - Toko Fashion Online Terlengkap',
-          metaDesc: 'Belanja fashion terlengkap dengan harga terbaik. Gratis ongkir, cod, dan banyak promo menarik.',
+          metaDesc: 'Belanja fashion terlengkap dengan harga terbaik. COD, pengiriman cepat, dan banyak promo menarik.',
           metaKeywords: 'fashion, baju, pakaian, online shop, jakarta',
           shippingMethods: JSON.stringify([
             { id: 'jne-reg', courier: 'JNE', service: 'Reguler', price: 18000, eta: '2-3 hari' },
