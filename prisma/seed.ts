@@ -1,1137 +1,895 @@
-import { db } from '../src/lib/db';
-import { Prisma } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 
-async function main() {
-  console.log('🌱 Seeding database...');
-  console.log('🗑️  Clearing existing data...');
+const db = new PrismaClient();
 
-  // Clear in correct order (respect foreign keys)
+// ==================== DATA ====================
+
+const categories = [
+  { name: 'Fashion Wanita', slug: 'fashion-wanita', description: 'Koleksi fashion wanita terkini' },
+  { name: 'Fashion Pria', slug: 'fashion-pria', description: 'Pakaian pria stylish dan modern' },
+  { name: 'Fashion Anak', slug: 'fashion-anak', description: 'Pakaian anak lucu dan nyaman' },
+  { name: 'Sepatu', slug: 'sepatu', description: 'Sepatu branded dan lokal berkualitas' },
+  { name: 'Tas', slug: 'tas', description: 'Tas fashion untuk segala kebutuhan' },
+  { name: 'Aksesoris', slug: 'aksesoris', description: 'Aksesoris melengkapi penampilan Anda' },
+  { name: 'Hijab', slug: 'hijab', description: 'Hijab modern dan elegan' },
+  { name: 'Jam Tangan', slug: 'jam-tangan', description: 'Jam tangan original dan trendy' },
+];
+
+const products = [
+  {
+    name: 'Blouse Ruffle Elegant',
+    slug: 'blouse-ruffle-elegant',
+    description: 'Blouse wanita dengan detail ruffle yang elegan. Cocok untuk acara semi-formal maupun casual. Material: 100% Polyester premium yang ringan dan nyaman.',
+    shortDesc: 'Blouse ruffle premium untuk tampilan elegan',
+    price: 189000,
+    comparePrice: 259000,
+    sku: 'FW-BLR-001',
+    barcode: '8991234567001',
+    weight: 0.2,
+    stock: 85,
+    isFeatured: true,
+    isNew: false,
+    images: JSON.stringify(['/images/products/dress-1.png']),
+    categorySlugs: ['fashion-wanita'],
+    variations: [
+      { color: 'Putih', size: 'S', sku: 'FW-BLR-001-WH-S', stock: 20, price: null },
+      { color: 'Putih', size: 'M', sku: 'FW-BLR-001-WH-M', stock: 25, price: null },
+      { color: 'Putih', size: 'L', sku: 'FW-BLR-001-WH-L', stock: 20, price: null },
+      { color: 'Hitam', size: 'S', sku: 'FW-BLR-001-BK-S', stock: 10, price: null },
+      { color: 'Hitam', size: 'M', sku: 'FW-BLR-001-BK-M', stock: 10, price: null },
+    ],
+  },
+  {
+    name: 'Kemeja Linen Premium',
+    slug: 'kemeja-linen-premium',
+    description: 'Kemeja pria dari material linen premium yang breathable. Cocok untuk cuaca tropis Indonesia. Tampilan smart casual yang timeless.',
+    shortDesc: 'Kemeja linen breathable untuk pria',
+    price: 249000,
+    comparePrice: 329000,
+    sku: 'FP-KLN-001',
+    barcode: '8991234567002',
+    weight: 0.25,
+    stock: 60,
+    isFeatured: true,
+    isNew: false,
+    images: JSON.stringify(['/images/products/shirt-1.png']),
+    categorySlugs: ['fashion-pria'],
+    variations: [
+      { color: 'Navy', size: 'M', sku: 'FP-KLN-001-NV-M', stock: 15, price: null },
+      { color: 'Navy', size: 'L', sku: 'FP-KLN-001-NV-L', stock: 15, price: null },
+      { color: 'Navy', size: 'XL', sku: 'FP-KLN-001-NV-XL', stock: 10, price: null },
+      { color: 'Cream', size: 'M', sku: 'FP-KLN-001-CR-M', stock: 10, price: null },
+      { color: 'Cream', size: 'L', sku: 'FP-KLN-001-CR-L', stock: 10, price: null },
+    ],
+  },
+  {
+    name: 'Gamis Syar\'i Premium',
+    slug: 'gamis-syari-premium',
+    description: 'Gamis syar\'i dengan material jersey premium yang jatuh sempurna. Desain simple yet elegant dengan detail plisket. Cocok untuk harian maupun acara.',
+    shortDesc: 'Gamis syar\'i jersey premium plisket',
+    price: 345000,
+    comparePrice: 450000,
+    sku: 'FW-GMS-001',
+    barcode: '8991234567003',
+    weight: 0.35,
+    stock: 40,
+    isFeatured: true,
+    isNew: true,
+    images: JSON.stringify(['/images/products/hijab-1.png']),
+    categorySlugs: ['fashion-wanita', 'hijab'],
+    variations: [
+      { color: 'Maroon', size: 'M', sku: 'FW-GMS-001-MR-M', stock: 10, price: null },
+      { color: 'Maroon', size: 'L', sku: 'FW-GMS-001-MR-L', stock: 10, price: null },
+      { color: 'Maroon', size: 'XL', sku: 'FW-GMS-001-MR-XL', stock: 5, price: null },
+      { color: 'Dusty Pink', size: 'M', sku: 'FW-GMS-001-DP-M', stock: 8, price: null },
+      { color: 'Dusty Pink', size: 'L', sku: 'FW-GMS-001-DP-L', stock: 7, price: null },
+    ],
+  },
+  {
+    name: 'Sneakers Urban Classic',
+    slug: 'sneakers-urban-classic',
+    description: 'Sepatu sneakers dengan desain klasik yang tidak pernah ketinggalan zaman. Sol empuk dan ringan, cocok untuk aktivitas seharian. Upper material kulit sintetis.',
+    shortDesc: 'Sneakers klasik untuk aktivitas harian',
+    price: 299000,
+    comparePrice: 429000,
+    sku: 'SP-URB-001',
+    barcode: '8991234567004',
+    weight: 0.8,
+    stock: 50,
+    isFeatured: true,
+    isNew: false,
+    images: JSON.stringify(['/images/products/shoes-1.png']),
+    categorySlugs: ['sepatu'],
+    variations: [
+      { color: 'Putih', size: '39', sku: 'SP-URB-001-WH-39', stock: 10, price: null },
+      { color: 'Putih', size: '40', sku: 'SP-URB-001-WH-40', stock: 10, price: null },
+      { color: 'Putih', size: '41', sku: 'SP-URB-001-WH-41', stock: 10, price: null },
+      { color: 'Putih', size: '42', sku: 'SP-URB-001-WH-42', stock: 10, price: null },
+      { color: 'Putih', size: '43', sku: 'SP-URB-001-WH-43', stock: 10, price: null },
+    ],
+  },
+  {
+    name: 'Tas Tote Premium Canvas',
+    slug: 'tas-tote-premium-canvas',
+    description: 'Tas tote berbahan kanvas premium dengan kapasitas besar. Dilengkapi resleting untuk keamanan barang. Cocok untuk kerja, kuliah, atau jalan-jalan.',
+    shortDesc: 'Tas tote canvas kapasitas besar',
+    price: 175000,
+    comparePrice: 225000,
+    sku: 'TS-TOT-001',
+    barcode: '8991234567005',
+    weight: 0.5,
+    stock: 70,
+    isFeatured: true,
+    isNew: true,
+    images: JSON.stringify(['/images/products/bag-1.png']),
+    categorySlugs: ['tas'],
+    variations: [
+      { color: 'Hitam', size: 'One Size', sku: 'TS-TOT-001-BK-OS', stock: 25, price: null },
+      { color: 'Coklat', size: 'One Size', sku: 'TS-TOT-001-BR-OS', stock: 25, price: null },
+      { color: 'Army', size: 'One Size', sku: 'TS-TOT-001-AR-OS', stock: 20, price: null },
+    ],
+  },
+  {
+    name: 'Jam Tangan Digital Sport',
+    slug: 'jam-tangan-digital-sport',
+    description: 'Jam tangan digital dengan fitur lengkap: stopwatch, alarm, backlight, water resistant 50m. Desain sporty dan tangguh untuk segala aktivitas.',
+    shortDesc: 'Jam digital sport water resistant 50m',
+    price: 425000,
+    comparePrice: 550000,
+    sku: 'JT-DSP-001',
+    barcode: '8991234567006',
+    weight: 0.1,
+    stock: 35,
+    isFeatured: true,
+    isNew: false,
+    images: JSON.stringify(['/images/products/watch-1.png']),
+    categorySlugs: ['jam-tangan'],
+    variations: [
+      { color: 'Hitam', size: 'One Size', sku: 'JT-DSP-001-BK-OS', stock: 15, price: null },
+      { color: 'Silver', size: 'One Size', sku: 'JT-DSP-001-SL-OS', stock: 10, price: null },
+      { color: 'Navy', size: 'One Size', sku: 'JT-DSP-001-NV-OS', stock: 10, price: null },
+    ],
+  },
+  {
+    name: 'Celana Jogger Slim Fit',
+    slug: 'celana-jogger-slim-fit',
+    description: 'Celana jogger slim fit dengan material cotton terry yang lembut. Cocok untuk olahraga ringan, hangout, atau sebagai daily wear. Elastic waistband.',
+    shortDesc: 'Jogger slim fit cotton terry premium',
+    price: 199000,
+    comparePrice: 275000,
+    sku: 'FP-JOG-001',
+    barcode: '8991234567007',
+    weight: 0.3,
+    stock: 90,
+    isFeatured: false,
+    isNew: true,
+    images: JSON.stringify(['/images/products/shirt-1.png']),
+    categorySlugs: ['fashion-pria'],
+    variations: [
+      { color: 'Hitam', size: 'M', sku: 'FP-JOG-001-BK-M', stock: 20, price: null },
+      { color: 'Hitam', size: 'L', sku: 'FP-JOG-001-BK-L', stock: 20, price: null },
+      { color: 'Hitam', size: 'XL', sku: 'FP-JOG-001-BK-XL', stock: 15, price: null },
+      { color: 'Abu', size: 'M', sku: 'FP-JOG-001-GR-M', stock: 15, price: null },
+      { color: 'Abu', size: 'L', sku: 'FP-JOG-001-GR-L', stock: 20, price: null },
+    ],
+  },
+  {
+    name: 'Set Baju Anak Lucu',
+    slug: 'set-baju-anak-lucu',
+    description: 'Set baju anak (atasan + celana) dengan motif kartun yang lucu dan menarik. Material cotton combed 24s yang lembut untuk kulit sensitif anak.',
+    shortDesc: 'Set baju anak cotton combed motif kartun',
+    price: 129000,
+    comparePrice: 175000,
+    sku: 'FA-SET-001',
+    barcode: '8991234567008',
+    weight: 0.15,
+    stock: 120,
+    isFeatured: false,
+    isNew: true,
+    images: JSON.stringify(['/images/products/kids-1.png']),
+    categorySlugs: ['fashion-anak'],
+    variations: [
+      { color: 'Biru', size: '2-3T', sku: 'FA-SET-001-BL-23', stock: 30, price: null },
+      { color: 'Biru', size: '3-4T', sku: 'FA-SET-001-BL-34', stock: 30, price: null },
+      { color: 'Pink', size: '2-3T', sku: 'FA-SET-001-PK-23', stock: 30, price: null },
+      { color: 'Pink', size: '3-4T', sku: 'FA-SET-001-PK-34', stock: 30, price: null },
+    ],
+  },
+  {
+    name: 'Kalung Pendant Minimalis',
+    slug: 'kalung-pendant-minimalis',
+    description: 'Kalung pendant dengan desain minimalis modern. Berbahan stainless steel anti karat dengan rantai box chain. Cocok untuk daily wear dan tampilan elegan.',
+    shortDesc: 'Kalung stainless steel anti karat minimalis',
+    price: 89000,
+    comparePrice: 135000,
+    sku: 'AK-KLN-001',
+    barcode: '8991234567009',
+    weight: 0.05,
+    stock: 200,
+    isFeatured: false,
+    isNew: true,
+    images: JSON.stringify(['/images/products/acc-1.png']),
+    categorySlugs: ['aksesoris'],
+    variations: [
+      { color: 'Gold', size: 'One Size', sku: 'AK-KLN-001-GD-OS', stock: 70, price: null },
+      { color: 'Silver', size: 'One Size', sku: 'AK-KLN-001-SL-OS', stock: 70, price: null },
+      { color: 'Rose Gold', size: 'One Size', sku: 'AK-KLN-001-RG-OS', stock: 60, price: null },
+    ],
+  },
+  {
+    name: 'Hijab Pashmina Voal Premium',
+    slug: 'hijab-pashmina-voal-premium',
+    description: 'Hijab pashmina dari material voal super premium yang halus, ringan, dan tidak mudah kusut. Tekstur crinkle yang natural. Mudah dibentuk dan nyaman sepanjang hari.',
+    shortDesc: 'Pashmina voal super premium anti kusut',
+    price: 79000,
+    comparePrice: 110000,
+    sku: 'HJ-PSH-001',
+    barcode: '8991234567010',
+    weight: 0.1,
+    stock: 150,
+    isFeatured: false,
+    isNew: false,
+    images: JSON.stringify(['/images/products/hijab-1.png']),
+    categorySlugs: ['hijab'],
+    variations: [
+      { color: 'Sage', size: 'One Size', sku: 'HJ-PSH-001-SG-OS', stock: 30, price: null },
+      { color: 'Mauve', size: 'One Size', sku: 'HJ-PSH-001-MV-OS', stock: 30, price: null },
+      { color: 'Caramel', size: 'One Size', sku: 'HJ-PSH-001-CM-OS', stock: 30, price: null },
+      { color: 'Hitam', size: 'One Size', sku: 'HJ-PSH-001-BK-OS', stock: 30, price: null },
+      { color: 'Milktea', size: 'One Size', sku: 'HJ-PSH-001-MT-OS', stock: 30, price: null },
+    ],
+  },
+  {
+    name: 'Dress Midi Floral Summer',
+    slug: 'dress-midi-floral-summer',
+    description: 'Dress midi motif floral yang cantik untuk summer. Bahan chiffon premium yang ringan dan jatuh sempurna. Cocok untuk hangout dan acara outdoor.',
+    shortDesc: 'Dress midi floral chiffon untuk summer',
+    price: 275000,
+    comparePrice: 380000,
+    sku: 'FW-DRS-001',
+    barcode: '8991234567011',
+    weight: 0.2,
+    stock: 45,
+    isFeatured: false,
+    isNew: true,
+    images: JSON.stringify(['/images/products/dress-1.png']),
+    categorySlugs: ['fashion-wanita'],
+    variations: [
+      { color: 'Floral Pink', size: 'S', sku: 'FW-DRS-001-FP-S', stock: 10, price: null },
+      { color: 'Floral Pink', size: 'M', sku: 'FW-DRS-001-FP-M', stock: 10, price: null },
+      { color: 'Floral Pink', size: 'L', sku: 'FW-DRS-001-FP-L', stock: 10, price: null },
+      { color: 'Floral Blue', size: 'S', sku: 'FW-DRS-001-FB-S', stock: 5, price: null },
+      { color: 'Floral Blue', size: 'M', sku: 'FW-DRS-001-FB-M', stock: 5, price: null },
+      { color: 'Floral Blue', size: 'L', sku: 'FW-DRS-001-FB-L', stock: 5, price: null },
+    ],
+  },
+  {
+    name: 'Heels Pump Classic',
+    slug: 'heels-pump-classic',
+    description: 'Sepatu heels pump klasik berbahan kulit sintetis premium. Tinggi hak 7cm yang nyaman untuk dipakai seharian. Cocok untuk ke kantor dan acara formal.',
+    shortDesc: 'Heels pump kulit sintetis 7cm',
+    price: 329000,
+    comparePrice: 450000,
+    sku: 'SP-HPM-001',
+    barcode: '8991234567012',
+    weight: 0.6,
+    stock: 35,
+    isFeatured: false,
+    isNew: false,
+    images: JSON.stringify(['/images/products/shoes-1.png']),
+    categorySlugs: ['sepatu'],
+    variations: [
+      { color: 'Hitam', size: '37', sku: 'SP-HPM-001-BK-37', stock: 7, price: null },
+      { color: 'Hitam', size: '38', sku: 'SP-HPM-001-BK-38', stock: 7, price: null },
+      { color: 'Hitam', size: '39', sku: 'SP-HPM-001-BK-39', stock: 7, price: null },
+      { color: 'Nude', size: '37', sku: 'SP-HPM-001-ND-37', stock: 5, price: null },
+      { color: 'Nude', size: '38', sku: 'SP-HPM-001-ND-38', stock: 5, price: null },
+      { color: 'Nude', size: '39', sku: 'SP-HPM-001-ND-39', stock: 4, price: null },
+    ],
+  },
+  {
+    name: 'Tas Selempang Mini',
+    slug: 'tas-selempang-mini',
+    description: 'Tas selempang mini berbahan kulit PU premium. Ukuran compact tapi muat HP, dompet, dan barang esensial lainnya. Adjustable strap.',
+    shortDesc: 'Tas selempang mini kulit PU premium',
+    price: 149000,
+    comparePrice: 199000,
+    sku: 'TS-SLP-001',
+    barcode: '8991234567013',
+    weight: 0.3,
+    stock: 80,
+    isFeatured: false,
+    isNew: true,
+    images: JSON.stringify(['/images/products/bag-1.png']),
+    categorySlugs: ['tas'],
+    variations: [
+      { color: 'Hitam', size: 'One Size', sku: 'TS-SLP-001-BK-OS', stock: 25, price: null },
+      { color: 'Coklat', size: 'One Size', sku: 'TS-SLP-001-BR-OS', stock: 25, price: null },
+      { color: 'Maroon', size: 'One Size', sku: 'TS-SLP-001-MR-OS', stock: 15, price: null },
+      { color: 'Army', size: 'One Size', sku: 'TS-SLP-001-AR-OS', stock: 15, price: null },
+    ],
+  },
+  {
+    name: 'Gelang Rantai Gold Plated',
+    slug: 'gelang-rantai-gold-plated',
+    description: 'Gelang rantai gold plated 18K yang elegan. Material stainless steel berlapis emas yang tahan lama. Cocok untuk pria dan wanita. Water resistant.',
+    shortDesc: 'Gelang gold plated 18K water resistant',
+    price: 65000,
+    comparePrice: 95000,
+    sku: 'AK-GLG-001',
+    barcode: '8991234567014',
+    weight: 0.03,
+    stock: 250,
+    isFeatured: false,
+    isNew: true,
+    images: JSON.stringify(['/images/products/acc-1.png']),
+    categorySlugs: ['aksesoris'],
+    variations: [
+      { color: 'Gold', size: 'One Size', sku: 'AK-GLG-001-GD-OS', stock: 100, price: null },
+      { color: 'Silver', size: 'One Size', sku: 'AK-GLG-001-SL-OS', stock: 80, price: null },
+      { color: 'Rose Gold', size: 'One Size', sku: 'AK-GLG-001-RG-OS', stock: 70, price: null },
+    ],
+  },
+  {
+    name: 'Kaos Oversize Unisex',
+    slug: 'kaos-oversize-unisex',
+    description: 'Kaos oversize cotton combed 30s yang nyaman dan trendy. Bisa dipakai pria dan wanita. Cocok untuk daily wear, hangout, atau layered outfit.',
+    shortDesc: 'Kaos oversize cotton combed 30s unisex',
+    price: 119000,
+    comparePrice: 165000,
+    sku: 'FP-KOS-001',
+    barcode: '8991234567015',
+    weight: 0.2,
+    stock: 200,
+    isFeatured: false,
+    isNew: false,
+    images: JSON.stringify(['/images/products/shirt-1.png']),
+    categorySlugs: ['fashion-pria', 'fashion-wanita'],
+    variations: [
+      { color: 'Hitam', size: 'L', sku: 'FP-KOS-001-BK-L', stock: 40, price: null },
+      { color: 'Hitam', size: 'XL', sku: 'FP-KOS-001-BK-XL', stock: 40, price: null },
+      { color: 'Putih', size: 'L', sku: 'FP-KOS-001-WH-L', stock: 40, price: null },
+      { color: 'Putih', size: 'XL', sku: 'FP-KOS-001-WH-XL', stock: 40, price: null },
+      { color: 'Cream', size: 'L', sku: 'FP-KOS-001-CR-L', stock: 20, price: null },
+      { color: 'Cream', size: 'XL', sku: 'FP-KOS-001-CR-XL', stock: 20, price: null },
+    ],
+  },
+  {
+    name: 'Sandal Slide EVA Comfort',
+    slug: 'sandal-slide-eva-comfort',
+    description: 'Sandal slide dengan sol EVA yang super empuk dan ringan. Anti slip, water friendly, cocok untuk dalam dan luar rumah. Unisex design.',
+    shortDesc: 'Sandal slide EVA empuk anti slip unisex',
+    price: 59000,
+    comparePrice: 89000,
+    sku: 'SP-SDL-001',
+    barcode: '8991234567016',
+    weight: 0.3,
+    stock: 300,
+    isFeatured: false,
+    isNew: true,
+    images: JSON.stringify(['/images/products/shoes-1.png']),
+    categorySlugs: ['sepatu'],
+    variations: [
+      { color: 'Hitam', size: '39', sku: 'SP-SDL-001-BK-39', stock: 30, price: null },
+      { color: 'Hitam', size: '40', sku: 'SP-SDL-001-BK-40', stock: 30, price: null },
+      { color: 'Hitam', size: '41', sku: 'SP-SDL-001-BK-41', stock: 30, price: null },
+      { color: 'Hitam', size: '42', sku: 'SP-SDL-001-BK-42', stock: 30, price: null },
+      { color: 'Hitam', size: '43', sku: 'SP-SDL-001-BK-43', stock: 30, price: null },
+    ],
+  },
+];
+
+const users = [
+  {
+    name: 'Admin LUXE',
+    email: 'admin@luxefashion.com',
+    password: '$2b$10$placeholder_hash_for_admin',
+    phone: '+62 812 0000 0001',
+    role: 'admin',
+    memberLevel: 'admin',
+    points: 0,
+    isActive: true,
+  },
+  {
+    name: 'Sari Dewi',
+    email: 'sari.dewi@email.com',
+    password: '$2b$10$placeholder_hash',
+    phone: '+62 812 3456 7891',
+    role: 'customer',
+    memberLevel: 'gold',
+    points: 2500,
+    isActive: true,
+  },
+  {
+    name: 'Budi Santoso',
+    email: 'budi.santoso@email.com',
+    password: '$2b$10$placeholder_hash',
+    phone: '+62 813 9876 5432',
+    role: 'customer',
+    memberLevel: 'silver',
+    points: 1200,
+    isActive: true,
+  },
+  {
+    name: 'Anisa Rahma',
+    email: 'anisa.rahma@email.com',
+    password: '$2b$10$placeholder_hash',
+    phone: '+62 857 1234 5678',
+    role: 'customer',
+    memberLevel: 'silver',
+    points: 800,
+    isActive: true,
+  },
+  {
+    name: 'Dian Pratama',
+    email: 'dian.pratama@email.com',
+    password: '$2b$10$placeholder_hash',
+    phone: '+62 878 9876 1234',
+    role: 'customer',
+    memberLevel: 'gold',
+    points: 3400,
+    isActive: true,
+  },
+];
+
+const blogPosts = [
+  {
+    title: '5 Tren Fashion 2024 yang Wajib Kamu Tahu',
+    slug: '5-tren-fashion-2024-wajib-kamu-tahu',
+    excerpt: 'Tahun 2024 membawa berbagai tren fashion baru yang fresh dan exciting. Simak 5 tren terbesar yang akan mendominasi dunia fashion tahun ini.',
+    content: `<h2>Tren Fashion 2024</h2><p>Tahun 2024 membawa revolusi dalam dunia fashion. Berikut 5 tren terbesar yang wajib kamu tahu:</p><h3>1. Quiet Luxury</h3><p>Tampil mewah tanpa logo berlebihan. Fokus pada kualitas bahan dan potongan yang sempurna.</p><h3>2. Bold Colors</h3><p>Warna-warna cerah dan bold seperti fuchsia, electric blue, dan lime green menjadi statement.</p><h3>3. Oversized Everything</h3><p>Siluet oversize tetap dominan, dari blazer hingga celana wide-leg yang nyaman.</p><h3>4. Sustainable Fashion</h3><p>Fashion berkelanjutan semakin populer. Pilihan bahan ramah lingkungan menjadi prioritas.</p><h3>5. Y2K Revival</h3><p>Nostalgia era 2000-an kembali dengan crop top, low-rise jeans, dan aksesoris bling-bling.</p>`,
+    author: 'LUXE Fashion Team',
+    coverImage: '/images/banners/hero1.png',
+    isPublished: true,
+  },
+  {
+    title: 'Tips Memilih Hijab Sesuai Bentuk Wajah',
+    slug: 'tips-memilih-hijab-sesuai-bentuk-wajah',
+    excerpt: 'Memilih hijab yang tepat bisa menonjolkan kecantikan wajahmu. Berikut panduan lengkap untuk berbagai bentuk wajah.',
+    content: `<h2>Panduan Memilih Hijab</h2><p>Hijab bukan hanya penutup aurat, tapi juga bagian dari fashion yang bisa meningkatkan kepercayaan diri.</p><h3>Wajah Oval</h3><p>Bentuk wajah oval paling fleksibel. Hampir semua gaya hijab cocok!</p><h3>Wajah Bulat</h3><p>Pilih hijab dengan drape yang jatuh di bawah dagu untuk memberi kesan tirus.</p><h3>Wajah Kotak</h3><p>Gunakan hijab dengan layer dan volume di area pipi untuk melunakkan sudut wajah.</p><h3>Wajah Hati</h3><p>Pashmina yang dililit longgar di bawah dagu bisa menyeimbangkan proporsi wajah.</p>`,
+    author: 'LUXE Fashion Team',
+    coverImage: '/images/banners/hero2.png',
+    isPublished: true,
+  },
+  {
+    title: 'Cara Merawat Baju Agar Awet dan Tetap Berwarna',
+    slug: 'cara-merawat-baju-awet-tetap-berwarna',
+    excerpt: 'Baju favoritmu cepat pudar? Simak tips merawat pakaian agar tetap awet, warna tetap cerah, dan bahan tetap bagus.',
+    content: `<h2>Tips Perawatan Pakaian</h2><p>Merawat pakaian dengan benar bisa memperpanjang usia pakai dan menjaga kualitasnya.</p><h3>Pisahkan Warna</h3><p>Selalu pisahkan pakaian berwarna gelap, terang, dan putih saat mencuci.</p><h3>Gunakan Deterjen Lembut</h3><p>Pilih deterjen yang gentle untuk bahan premium seperti linen dan silk.</p><h3>Hindari Mesin Pengering</h3><p>Jemur di tempat teduh untuk menjaga warna dan elastisitas bahan.</p><h3>Setrika dengan Suhu Tepat</h3><p>Sesuaikan suhu setrika dengan jenis bahan pakaian.</p>`,
+    author: 'LUXE Fashion Team',
+    coverImage: '/images/products/dress-1.png',
+    isPublished: true,
+  },
+];
+
+const vouchers = [
+  {
+    code: 'WELCOME50',
+    type: 'percentage',
+    value: 50,
+    minPurchase: 200000,
+    maxDiscount: 100000,
+    quota: 100,
+    used: 23,
+    isActive: true,
+  },
+  {
+    code: 'HEMAT30K',
+    type: 'fixed',
+    value: 30000,
+    minPurchase: 150000,
+    quota: 200,
+    used: 87,
+    isActive: true,
+  },
+  {
+    code: 'FLASH20',
+    type: 'percentage',
+    value: 20,
+    minPurchase: 100000,
+    maxDiscount: 75000,
+    quota: 150,
+    used: 0,
+    isActive: true,
+  },
+];
+
+const promos = [
+  {
+    name: 'Promo Diskon Akhir Bulan',
+    code: 'AKHIRBULAN25',
+    description: 'Diskon 25% untuk semua produk tanpa minimum pembelian!',
+    type: 'percentage',
+    value: 25,
+    scope: 'global',
+    productIds: '[]',
+    minPurchase: 0,
+    maxDiscount: 150000,
+    quota: 500,
+    used: 124,
+    isActive: true,
+    bannerText: 'DISKON 25% ALL ITEM',
+    bannerSubtext: 'Gunakan kode: AKHIRBULAN25 — Berlaku untuk semua produk',
+    bannerBg: 'from-rose-600 to-rose-500',
+  },
+  {
+    name: 'Potongan Ongkir Jabodetabek',
+    code: 'FREEONGKIR',
+    description: 'Gratis ongkir hingga Rp 25.000 untuk pengiriman ke area Jabodetabek',
+    type: 'shipping',
+    value: 25000,
+    scope: 'global',
+    productIds: '[]',
+    minPurchase: 200000,
+    maxDiscount: null,
+    quota: 300,
+    used: 56,
+    isActive: true,
+    bannerText: 'FREE ONGKIR JABODETABEK',
+    bannerSubtext: 'Min. belanja Rp 200rb — Gunakan kode: FREEONGKIR',
+    bannerBg: 'from-emerald-600 to-emerald-500',
+  },
+  {
+    name: 'Diskon Spesial Fashion Wanita',
+    code: 'WOMENSDAY',
+    description: 'Diskon 30% khusus kategori Fashion Wanita dan Hijab',
+    type: 'percentage',
+    value: 30,
+    scope: 'per_item',
+    productIds: '[]', // will be updated with actual product IDs
+    minPurchase: 100000,
+    maxDiscount: 200000,
+    quota: 200,
+    used: 33,
+    isActive: true,
+    bannerText: 'WOMEN\'S DAY SPECIAL 30% OFF',
+    bannerSubtext: 'Khusus Fashion Wanita & Hijab — Kode: WOMENSDAY',
+    bannerBg: 'from-violet-600 to-purple-500',
+  },
+];
+
+// ==================== SEED FUNCTION ====================
+
+async function seed() {
+  console.log('🌱 Seeding database...\n');
+
+  // 1. Clean existing data (order matters due to FK constraints)
+  console.log('🧹 Cleaning existing data...');
   await db.orderItem.deleteMany();
   await db.order.deleteMany();
   await db.review.deleteMany();
   await db.wishlist.deleteMany();
   await db.flashSaleItem.deleteMany();
   await db.flashSale.deleteMany();
-  await db.analytics.deleteMany();
-  await db.blogPost.deleteMany();
-  await db.voucher.deleteMany();
   await db.productVariation.deleteMany();
   await db.categoryProduct.deleteMany();
   await db.product.deleteMany();
   await db.category.deleteMany();
-  await db.address.deleteMany();
   await db.user.deleteMany();
+  await db.address.deleteMany();
+  await db.blogPost.deleteMany();
+  await db.voucher.deleteMany();
+  await db.promo.deleteMany();
+  await db.analytics.deleteMany();
+  await db.storeSettings.deleteMany();
+  console.log('✓ Data cleaned\n');
 
-  // ============================
-  // 1. CATEGORIES
-  // ============================
-  console.log('📂 Creating categories...');
+  // 2. Create Categories
+  console.log('📁 Creating categories...');
+  const createdCategories: Record<string, string> = {};
+  for (const cat of categories) {
+    const created = await db.category.create({ data: cat });
+    createdCategories[cat.slug] = created.id;
+    console.log(`  ✓ ${cat.name}`);
+  }
+  console.log(`✓ ${categories.length} categories created\n`);
 
-  const categories = await Promise.all([
-    db.category.create({
-      data: {
-        name: 'Fashion Pria',
-        slug: 'fashion-pria',
-        description: 'Koleksi fashion pria terlengkap dari kasual hingga formal',
-        image: '/images/products/shirt-1.png',
-      },
-    }),
-    db.category.create({
-      data: {
-        name: 'Fashion Wanita',
-        slug: 'fashion-wanita',
-        description: 'Koleksi fashion wanita modern dan elegan',
-        image: '/images/products/dress-1.png',
-      },
-    }),
-    db.category.create({
-      data: {
-        name: 'Fashion Anak',
-        slug: 'fashion-anak',
-        description: 'Pakaian anak yang nyaman dan stylish',
-        image: '/images/products/kids-1.png',
-      },
-    }),
-    db.category.create({
-      data: {
-        name: 'Sepatu',
-        slug: 'sepatu',
-        description: 'Berbagai pilihan sepatu untuk segala kesempatan',
-        image: '/images/products/shoes-1.png',
-      },
-    }),
-    db.category.create({
-      data: {
-        name: 'Tas',
-        slug: 'tas',
-        description: 'Tas fashion fungsional dan trendy',
-        image: '/images/products/bag-1.png',
-      },
-    }),
-    db.category.create({
-      data: {
-        name: 'Aksesoris',
-        slug: 'aksesoris',
-        description: 'Aksesoris pelengkap penampilan Anda',
-        image: '/images/products/acc-1.png',
-      },
-    }),
-    db.category.create({
-      data: {
-        name: 'Hijab',
-        slug: 'hijab',
-        description: 'Koleksi hijab modern dan berkualitas',
-        image: '/images/products/hijab-1.png',
-      },
-    }),
-    db.category.create({
-      data: {
-        name: 'Jam Tangan',
-        slug: 'jam-tangan',
-        description: 'Jam tangan premium untuk segala gaya',
-        image: '/images/products/watch-1.png',
-      },
-    }),
-  ]);
-
-  const categoryMap = new Map(categories.map((c) => [c.slug, c.id]));
-  console.log(`   ✅ Created ${categories.length} categories`);
-
-  // ============================
-  // 2. PRODUCTS
-  // ============================
-  console.log('🛍️  Creating products...');
-
-  type ProductData = Prisma.ProductCreateArgs['data'];
-
-  const productsData: ProductData[] = [
-    // Product 1: Elegant Summer Dress
-    {
-      name: 'Elegant Summer Dress',
-      slug: 'elegant-summer-dress',
-      description:
-        'Gaun musim panas yang elegan dengan bahan adem dan nyaman. Desain floral yang cantik cocok untuk berbagai acara casual maupun semi-formal. Bahan premium yang ringan dan breathable, sempurna untuk cuaca tropis Indonesia.',
-      shortDesc: 'Gaun floral elegan untuk musim panas',
-      price: 450000,
-      comparePrice: 600000,
-      sku: 'LXE-DRESS-001',
-      weight: 0.3,
-      stock: 150,
-      minStock: 10,
-      images: JSON.stringify(['/images/products/dress-1.png']),
-      isFeatured: true,
-      isNew: true,
-      metaTitle: 'Elegant Summer Dress - LUXE Fashion',
-      metaDesc: 'Beli Elegant Summer Dress online di LUXE Fashion. Bahan adem, desain floral cantik.',
-    },
-    // Product 2: Premium Cotton Shirt
-    {
-      name: 'Premium Cotton Shirt',
-      slug: 'premium-cotton-shirt',
-      description:
-        'Kemeja katun premium dengan kualitas terbaik. Bahan 100% cotton combed yang lembut dan nyaman dipakai sehari-hari. Cocok untuk ke kantor maupun acara casual. Tersedia dalam berbagai warna dan ukuran.',
-      shortDesc: 'Kemeja katun premium untuk pria',
-      price: 350000,
-      comparePrice: 450000,
-      sku: 'LXE-SHIRT-001',
-      weight: 0.25,
-      stock: 200,
-      minStock: 15,
-      images: JSON.stringify(['/images/products/shirt-1.png']),
-      isFeatured: true,
-      isNew: false,
-      metaTitle: 'Premium Cotton Shirt - LUXE Fashion',
-      metaDesc: 'Kemeja katun premium berkualitas tinggi untuk pria modern.',
-    },
-    // Product 3: Instant Hijab Jersey
-    {
-      name: 'Instant Hijab Jersey',
-      slug: 'instant-hijab-jersey',
-      description:
-        'Hijab instan bahan jersey premium yang lembut dan tidak mudah kusut. Praktis dipakai tanpa perlu peniti. Tersedia dalam berbagai warna pastel yang cantik. Bahan adem dan menyerap keringat dengan baik.',
-      shortDesc: 'Hijab instan jersey premium, praktis dan nyaman',
-      price: 120000,
-      comparePrice: 180000,
-      sku: 'LXE-HIJB-001',
-      weight: 0.1,
-      stock: 300,
-      minStock: 20,
-      images: JSON.stringify(['/images/products/hijab-1.png']),
-      isFeatured: false,
-      isNew: true,
-      metaTitle: 'Instant Hijab Jersey - LUXE Fashion',
-      metaDesc: 'Hijab instan jersey premium, praktis dan nyaman dipakai sehari-hari.',
-    },
-    // Product 4: Urban Street Sneakers
-    {
-      name: 'Urban Street Sneakers',
-      slug: 'urban-street-sneakers',
-      description:
-        'Sepatu sneakers urban dengan desain modern dan stylish. Sol karet yang anti-slip dan empuk untuk kenyamanan seharian. Upper bahan kulit sintetis berkualitas tinggi. Cocok untuk aktivitas sehari-hari maupun olahraga ringan.',
-      shortDesc: 'Sneakers urban modern untuk aktivitas sehari-hari',
-      price: 650000,
-      comparePrice: 850000,
-      sku: 'LXE-SHOE-001',
-      weight: 0.8,
-      stock: 100,
-      minStock: 10,
-      images: JSON.stringify(['/images/products/shoes-1.png']),
-      isFeatured: true,
-      isNew: true,
-      metaTitle: 'Urban Street Sneakers - LUXE Fashion',
-      metaDesc: 'Sepatu sneakers urban modern, nyaman dan stylish.',
-    },
-    // Product 5: Crossbody Leather Bag
-    {
-      name: 'Crossbody Leather Bag',
-      slug: 'crossbody-leather-bag',
-      description:
-        'Tas selempang kulit premium dengan desain minimalis dan elegan. Bahan kulit sintetis berkualitas tinggi yang tahan lama. Kompartemen luas dengan organizer interior. Tali strap adjustable untuk kenyamanan penggunaan.',
-      shortDesc: 'Tas selempang kulit premium dengan desain minimalis',
-      price: 550000,
-      comparePrice: 750000,
-      sku: 'LXE-BAG-001',
-      weight: 0.5,
-      stock: 80,
-      minStock: 8,
-      images: JSON.stringify(['/images/products/bag-1.png']),
-      isFeatured: true,
-      isNew: false,
-      metaTitle: 'Crossbody Leather Bag - LUXE Fashion',
-      metaDesc: 'Tas selempang kulit premium, desain minimalis dan elegan.',
-    },
-    // Product 6: Rose Gold Watch
-    {
-      name: 'Rose Gold Watch',
-      slug: 'rose-gold-watch',
-      description:
-        'Jam tangan rose gold dengan desain elegan dan feminin. Movement Japan Quartz yang akurat. Water resistant hingga 30 meter. Tali stainless steel rose gold dengan clasp yang aman. Cocok untuk segala kesempatan.',
-      shortDesc: 'Jam tangan rose gold elegan untuk wanita',
-      price: 850000,
-      comparePrice: 1200000,
-      sku: 'LXE-WTCH-001',
-      weight: 0.1,
-      stock: 50,
-      minStock: 5,
-      images: JSON.stringify(['/images/products/watch-1.png']),
-      isFeatured: true,
-      isNew: false,
-      metaTitle: 'Rose Gold Watch - LUXE Fashion',
-      metaDesc: 'Jam tangan rose gold elegan, movement Japan Quartz.',
-    },
-    // Product 7: Kids Striped Tee Set
-    {
-      name: 'Kids Striped Tee Set',
-      slug: 'kids-striped-tee-set',
-      description:
-        'Set kaos bergaris untuk anak dengan bahan katun 100% yang lembut dan aman untuk kulit anak. Desain colorful yang ceria dan menyenangkan. Tersedia dalam set 3 pcs dengan warna berbeda. Mudah dicuci dan tidak mudah pudar.',
-      shortDesc: 'Set kaos bergaris ceria untuk anak-anak',
-      price: 180000,
-      comparePrice: 250000,
-      sku: 'LXE-KIDS-001',
-      weight: 0.2,
-      stock: 120,
-      minStock: 10,
-      images: JSON.stringify(['/images/products/kids-1.png']),
-      isFeatured: false,
-      isNew: true,
-      metaTitle: 'Kids Striped Tee Set - LUXE Fashion',
-      metaDesc: 'Set kaos bergaris ceria untuk anak, bahan katun aman.',
-    },
-    // Product 8: Gold Layered Necklace Set
-    {
-      name: 'Gold Layered Necklace Set',
-      slug: 'gold-layered-necklace-set',
-      description:
-        'Set kalung layered gold plated dengan desain modern dan elegan. Terdiri dari 3 layer kalung dengan panjang berbeda. Material tahan karat dan anti-alergi. Cocok dipadukan dengan berbagai outfit untuk penampilan yang stylish.',
-      shortDesc: 'Set kalung layered gold plated yang elegan',
-      price: 250000,
-      comparePrice: 350000,
-      sku: 'LXE-ACC-001',
-      weight: 0.05,
-      stock: 90,
-      minStock: 10,
-      images: JSON.stringify(['/images/products/acc-1.png']),
-      isFeatured: false,
-      isNew: true,
-      metaTitle: 'Gold Layered Necklace Set - LUXE Fashion',
-      metaDesc: 'Set kalung layered gold plated, desain modern dan elegan.',
-    },
-    // Product 9: Blazer Wanita Premium
-    {
-      name: 'Blazer Wanita Premium',
-      slug: 'blazer-wanita-premium',
-      description:
-        'Blazer wanita premium dengan potongan yang flattering dan modern. Bahan katun campuran yang nyaman dan tidak mudah kusut. Cocok untuk ke kantor, meeting, maupun acara semi-formal. Desain timeless yang tidak pernah ketinggalan zaman.',
-      shortDesc: 'Blazer wanita premium untuk penampilan profesional',
-      price: 780000,
-      comparePrice: 950000,
-      sku: 'LXE-BLZR-001',
-      weight: 0.4,
-      stock: 60,
-      minStock: 8,
-      images: JSON.stringify(['/images/products/dress-1.png']),
-      isFeatured: true,
-      isNew: false,
-      metaTitle: 'Blazer Wanita Premium - LUXE Fashion',
-      metaDesc: 'Blazer wanita premium, potongan modern dan timeless.',
-    },
-    // Product 10: Kaos Polos Premium
-    {
-      name: 'Kaos Polos Premium',
-      slug: 'kaos-polos-premium',
-      description:
-        'Kaos polos premium dengan bahan cotton combed 30s yang super lembut dan nyaman. Jahitan rantai yang kuat dan rapi. Tersedia dalam berbagai warna dasar yang mudah dipadukan. Cocok untuk daily wear maupun dipakai sebagai inner.',
-      shortDesc: 'Kaos polos cotton combed 30s, lembut dan nyaman',
-      price: 150000,
-      sku: 'LXE-TSHR-001',
-      weight: 0.15,
-      stock: 500,
-      minStock: 30,
-      images: JSON.stringify(['/images/products/shirt-1.png']),
-      isFeatured: false,
-      isNew: false,
-      metaTitle: 'Kaos Polos Premium - LUXE Fashion',
-      metaDesc: 'Kaos polos cotton combed 30s, bahan lembut dan nyaman.',
-    },
-    // Product 11: Rok Pleated Mini
-    {
-      name: 'Rok Pleated Mini',
-      slug: 'rok-pleated-mini',
-      description:
-        'Rok pleated mini dengan desain yang girly dan stylish. Bahan polyester yang jatuh sempurna dan tidak mudah kusut. Cocok dipadukan dengan kaos, blouse, maupun kemeja. Tersedia dalam warna-warna netral yang mudah di-mix and match.',
-      shortDesc: 'Rok pleated mini, girly dan stylish',
-      price: 280000,
-      comparePrice: 380000,
-      sku: 'LXE-SKRT-001',
-      weight: 0.2,
-      stock: 110,
-      minStock: 10,
-      images: JSON.stringify(['/images/products/dress-1.png']),
-      isFeatured: false,
-      isNew: true,
-      metaTitle: 'Rok Pleated Mini - LUXE Fashion',
-      metaDesc: 'Rok pleated mini stylish, bahan jatuh sempurna.',
-    },
-    // Product 12: Hoodie Oversize
-    {
-      name: 'Hoodie Oversize',
-      slug: 'hoodie-oversize',
-      description:
-        'Hoodie oversize dengan bahan fleece premium yang tebal dan hangat. Cocok untuk cuaca dingin atau AC ruangan. Desain trendy dengan hoodie dan kantong kangaroo. Tersedia dalam warna-warna basic yang timeless.',
-      shortDesc: 'Hoodie oversize fleece premium, hangat dan trendy',
-      price: 320000,
-      comparePrice: 420000,
-      sku: 'LXE-HOOD-001',
-      weight: 0.45,
-      stock: 90,
-      minStock: 10,
-      images: JSON.stringify(['/images/products/shirt-1.png']),
-      isFeatured: false,
-      isNew: false,
-      metaTitle: 'Hoodie Oversize - LUXE Fashion',
-      metaDesc: 'Hoodie oversize fleece premium, tebal dan hangat.',
-    },
-  ];
-
-  // Category assignments per product slug
-  const productCategorySlugs: Record<string, string[]> = {
-    'elegant-summer-dress': ['fashion-wanita'],
-    'premium-cotton-shirt': ['fashion-pria'],
-    'instant-hijab-jersey': ['hijab'],
-    'urban-street-sneakers': ['sepatu'],
-    'crossbody-leather-bag': ['tas'],
-    'rose-gold-watch': ['jam-tangan'],
-    'kids-striped-tee-set': ['fashion-anak'],
-    'gold-layered-necklace-set': ['aksesoris'],
-    'blazer-wanita-premium': ['fashion-wanita'],
-    'kaos-polos-premium': ['fashion-pria'],
-    'rok-pleated-mini': ['fashion-wanita'],
-    'hoodie-oversize': ['fashion-pria'],
-  };
-
-  // Variation definitions per product slug
-  const productVariations: Record<string, Array<{ color: string; size: string; sku: string; stock: number }>> = {
-    'elegant-summer-dress': [
-      { color: 'Putih', size: 'S', sku: 'LXE-DRESS-001-WH-S', stock: 15 },
-      { color: 'Putih', size: 'M', sku: 'LXE-DRESS-001-WH-M', stock: 20 },
-      { color: 'Putih', size: 'L', sku: 'LXE-DRESS-001-WH-L', stock: 15 },
-      { color: 'Pink', size: 'S', sku: 'LXE-DRESS-001-PK-S', stock: 10 },
-      { color: 'Pink', size: 'M', sku: 'LXE-DRESS-001-PK-M', stock: 15 },
-      { color: 'Pink', size: 'L', sku: 'LXE-DRESS-001-PK-L', stock: 10 },
-    ],
-    'premium-cotton-shirt': [
-      { color: 'Putih', size: 'S', sku: 'LXE-SHIRT-001-WH-S', stock: 25 },
-      { color: 'Putih', size: 'M', sku: 'LXE-SHIRT-001-WH-M', stock: 30 },
-      { color: 'Putih', size: 'L', sku: 'LXE-SHIRT-001-WH-L', stock: 25 },
-      { color: 'Putih', size: 'XL', sku: 'LXE-SHIRT-001-WH-XL', stock: 20 },
-      { color: 'Navy', size: 'S', sku: 'LXE-SHIRT-001-NV-S', stock: 20 },
-      { color: 'Navy', size: 'M', sku: 'LXE-SHIRT-001-NV-M', stock: 25 },
-      { color: 'Navy', size: 'L', sku: 'LXE-SHIRT-001-NV-L', stock: 20 },
-      { color: 'Navy', size: 'XL', sku: 'LXE-SHIRT-001-NV-XL', stock: 15 },
-      { color: 'Hitam', size: 'M', sku: 'LXE-SHIRT-001-BK-M', stock: 20 },
-      { color: 'Hitam', size: 'L', sku: 'LXE-SHIRT-001-BK-L', stock: 20 },
-    ],
-    'instant-hijab-jersey': [
-      { color: 'Pink', size: 'M', sku: 'LXE-HIJB-001-PK-M', stock: 40 },
-      { color: 'Hitam', size: 'M', sku: 'LXE-HIJB-001-BK-M', stock: 40 },
-      { color: 'Navy', size: 'M', sku: 'LXE-HIJB-001-NV-M', stock: 30 },
-      { color: 'Putih', size: 'M', sku: 'LXE-HIJB-001-WH-M', stock: 30 },
-      { color: 'Merah', size: 'M', sku: 'LXE-HIJB-001-RD-M', stock: 25 },
-    ],
-    'urban-street-sneakers': [
-      { color: 'Putih', size: '39', sku: 'LXE-SHOE-001-WH-39', stock: 12 },
-      { color: 'Putih', size: '40', sku: 'LXE-SHOE-001-WH-40', stock: 15 },
-      { color: 'Putih', size: '41', sku: 'LXE-SHOE-001-WH-41', stock: 15 },
-      { color: 'Putih', size: '42', sku: 'LXE-SHOE-001-WH-42', stock: 12 },
-      { color: 'Putih', size: '43', sku: 'LXE-SHOE-001-WH-43', stock: 10 },
-      { color: 'Hitam', size: '40', sku: 'LXE-SHOE-001-BK-40', stock: 12 },
-      { color: 'Hitam', size: '41', sku: 'LXE-SHOE-001-BK-41', stock: 12 },
-      { color: 'Hitam', size: '42', sku: 'LXE-SHOE-001-BK-42', stock: 12 },
-    ],
-    'crossbody-leather-bag': [
-      { color: 'Hitam', size: 'M', sku: 'LXE-BAG-001-BK-M', stock: 25 },
-      { color: 'Coklat', size: 'M', sku: 'LXE-BAG-001-BR-M', stock: 25 },
-      { color: 'Navy', size: 'M', sku: 'LXE-BAG-001-NV-M', stock: 15 },
-    ],
-    'rose-gold-watch': [
-      { color: 'Rose Gold', size: 'M', sku: 'LXE-WTCH-001-RG-M', stock: 25 },
-    ],
-    'kids-striped-tee-set': [
-      { color: 'Multi', size: '2-3T', sku: 'LXE-KIDS-001-ML-2T', stock: 20 },
-      { color: 'Multi', size: '4-5T', sku: 'LXE-KIDS-001-ML-4T', stock: 25 },
-      { color: 'Multi', size: '6-7T', sku: 'LXE-KIDS-001-ML-6T', stock: 20 },
-      { color: 'Multi', size: '8-9T', sku: 'LXE-KIDS-001-ML-8T', stock: 20 },
-    ],
-    'gold-layered-necklace-set': [
-      { color: 'Gold', size: 'M', sku: 'LXE-ACC-001-GD-M', stock: 30 },
-      { color: 'Silver', size: 'M', sku: 'LXE-ACC-001-SV-M', stock: 25 },
-      { color: 'Rose Gold', size: 'M', sku: 'LXE-ACC-001-RG-M', stock: 20 },
-    ],
-    'blazer-wanita-premium': [
-      { color: 'Hitam', size: 'S', sku: 'LXE-BLZR-001-BK-S', stock: 12 },
-      { color: 'Hitam', size: 'M', sku: 'LXE-BLZR-001-BK-M', stock: 15 },
-      { color: 'Hitam', size: 'L', sku: 'LXE-BLZR-001-BK-L', stock: 12 },
-      { color: 'Navy', size: 'S', sku: 'LXE-BLZR-001-NV-S', stock: 8 },
-      { color: 'Navy', size: 'M', sku: 'LXE-BLZR-001-NV-M', stock: 8 },
-    ],
-    'kaos-polos-premium': [
-      { color: 'Hitam', size: 'S', sku: 'LXE-TSHR-001-BK-S', stock: 40 },
-      { color: 'Hitam', size: 'M', sku: 'LXE-TSHR-001-BK-M', stock: 50 },
-      { color: 'Hitam', size: 'L', sku: 'LXE-TSHR-001-BK-L', stock: 50 },
-      { color: 'Hitam', size: 'XL', sku: 'LXE-TSHR-001-BK-XL', stock: 40 },
-      { color: 'Putih', size: 'S', sku: 'LXE-TSHR-001-WH-S', stock: 40 },
-      { color: 'Putih', size: 'M', sku: 'LXE-TSHR-001-WH-M', stock: 50 },
-      { color: 'Putih', size: 'L', sku: 'LXE-TSHR-001-WH-L', stock: 50 },
-      { color: 'Putih', size: 'XL', sku: 'LXE-TSHR-001-WH-XL', stock: 40 },
-      { color: 'Navy', size: 'M', sku: 'LXE-TSHR-001-NV-M', stock: 40 },
-      { color: 'Navy', size: 'L', sku: 'LXE-TSHR-001-NV-L', stock: 40 },
-      { color: 'Merah', size: 'M', sku: 'LXE-TSHR-001-RD-M', stock: 25 },
-    ],
-    'rok-pleated-mini': [
-      { color: 'Hitam', size: 'S', sku: 'LXE-SKRT-001-BK-S', stock: 20 },
-      { color: 'Hitam', size: 'M', sku: 'LXE-SKRT-001-BK-M', stock: 25 },
-      { color: 'Hitam', size: 'L', sku: 'LXE-SKRT-001-BK-L', stock: 20 },
-      { color: 'Navy', size: 'S', sku: 'LXE-SKRT-001-NV-S', stock: 15 },
-      { color: 'Navy', size: 'M', sku: 'LXE-SKRT-001-NV-M', stock: 15 },
-      { color: 'Pink', size: 'S', sku: 'LXE-SKRT-001-PK-S', stock: 15 },
-    ],
-    'hoodie-oversize': [
-      { color: 'Hitam', size: 'L', sku: 'LXE-HOOD-001-BK-L', stock: 20 },
-      { color: 'Hitam', size: 'XL', sku: 'LXE-HOOD-001-BK-XL', stock: 15 },
-      { color: 'Navy', size: 'L', sku: 'LXE-HOOD-001-NV-L', stock: 15 },
-      { color: 'Navy', size: 'XL', sku: 'LXE-HOOD-001-NV-XL', stock: 15 },
-      { color: 'Merah', size: 'L', sku: 'LXE-HOOD-001-RD-L', stock: 10 },
-      { color: 'Putih', size: 'L', sku: 'LXE-HOOD-001-WH-L', stock: 15 },
-    ],
-  };
-
-  // Create all products
-  const products: Record<string, string> = {};
-  for (const productData of productsData) {
+  // 3. Create Products with Variations and Category links
+  console.log('👕 Creating products...');
+  const createdProducts: string[] = [];
+  for (const p of products) {
+    const { categorySlugs, variations, ...productData } = p;
     const product = await db.product.create({ data: productData });
-    products[product.slug] = product.id;
+    createdProducts.push(product.id);
 
-    // Create category-product relations
-    const catSlugs = productCategorySlugs[product.slug] || [];
-    for (const catSlug of catSlugs) {
-      const catId = categoryMap.get(catSlug);
-      if (catId) {
+    // Link to categories
+    for (const slug of categorySlugs) {
+      if (createdCategories[slug]) {
         await db.categoryProduct.create({
-          data: {
-            categoryId: catId,
-            productId: product.id,
-          },
+          data: { categoryId: createdCategories[slug], productId: product.id },
         });
       }
     }
 
     // Create variations
-    const variations = productVariations[product.slug] || [];
-    for (const variation of variations) {
+    for (const v of variations) {
       await db.productVariation.create({
+        data: { ...v, productId: product.id },
+      });
+    }
+
+    console.log(`  ✓ ${p.name}`);
+  }
+  console.log(`✓ ${products.length} products created\n`);
+
+  // 4. Create Users
+  console.log('👤 Creating users...');
+  const createdUsers: string[] = [];
+  for (const u of users) {
+    const user = await db.user.create({ data: u });
+    createdUsers.push(user.id);
+    console.log(`  ✓ ${u.name} (${u.email})`);
+  }
+  console.log(`✓ ${users.length} users created\n`);
+
+  // 5. Create Addresses
+  console.log('📍 Creating addresses...');
+  const addresses = [
+    { userId: createdUsers[1], label: 'Rumah', recipient: 'Sari Dewi', phone: '+62 812 3456 7891', address: 'Jl. Melati No. 15, RT 03/RW 05', city: 'Jakarta Selatan', province: 'DKI Jakarta', postalCode: '12345', isDefault: true },
+    { userId: createdUsers[1], label: 'Kantor', recipient: 'Sari Dewi', phone: '+62 812 3456 7891', address: 'Jl. Sudirman Kav. 52-53, Lantai 8', city: 'Jakarta Selatan', province: 'DKI Jakarta', postalCode: '12190', isDefault: false },
+    { userId: createdUsers[2], label: 'Rumah', recipient: 'Budi Santoso', phone: '+62 813 9876 5432', address: 'Jl. Anggrek No. 27', city: 'Bandung', province: 'Jawa Barat', postalCode: '40115', isDefault: true },
+    { userId: createdUsers[3], label: 'Rumah', recipient: 'Anisa Rahma', phone: '+62 857 1234 5678', address: 'Jl. Kenanga Raya No. 8, Blok C3', city: 'Surabaya', province: 'Jawa Timur', postalCode: '60234', isDefault: true },
+    { userId: createdUsers[4], label: 'Rumah', recipient: 'Dian Pratama', phone: '+62 878 9876 1234', address: 'Jl. Sunset Road No. 12', city: 'Denpasar', province: 'Bali', postalCode: '80361', isDefault: true },
+  ];
+  for (const a of addresses) {
+    await db.address.create({ data: a });
+  }
+  console.log(`✓ ${addresses.length} addresses created\n`);
+
+  // 6. Create Orders
+  console.log('📦 Creating orders...');
+  const orderStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+  const paymentMethods = ['transfer_bca', 'transfer_mandiri', 'ewallet_gopay', 'cod'];
+  const couriers = ['JNE', 'J&T', 'SiCepat'];
+  const courierServices = ['Reguler', 'YES', 'Express'];
+
+  for (let i = 0; i < 8; i++) {
+    const userIdx = 1 + (i % 4);
+    const numItems = 1 + Math.floor(Math.random() * 3);
+    const subtotal = 150000 + Math.floor(Math.random() * 500000);
+    const shippingCost = 15000 + Math.floor(Math.random() * 20000);
+    const discount = Math.floor(Math.random() * 50000);
+    const total = Math.max(0, subtotal + shippingCost - discount);
+    const status = orderStatuses[Math.min(i, orderStatuses.length - 1)];
+    const orderDate = new Date(Date.now() - (8 - i) * 24 * 60 * 60 * 1000);
+
+    const order = await db.order.create({
+      data: {
+        orderNumber: `ORD-${String(1000 + i).padStart(4, '0')}`,
+        userId: createdUsers[userIdx],
+        status,
+        subtotal,
+        shippingCost,
+        discount,
+        total,
+        paymentMethod: paymentMethods[i % paymentMethods.length],
+        paymentStatus: ['delivered', 'shipped'].includes(status) ? 'paid' : status === 'cancelled' ? 'expired' : 'pending',
+        courier: couriers[i % couriers.length],
+        courierService: courierServices[i % courierServices.length],
+        trackingNumber: status === 'shipped' || status === 'delivered'
+          ? `${couriers[i % couriers.length].toUpperCase()}${String(1000000000 + Math.floor(Math.random() * 9000000000))}`
+          : null,
+        shippingAddress: JSON.stringify({
+          recipient: users[userIdx].name,
+          phone: users[userIdx].phone,
+          address: 'Jl. Contoh No. ' + (10 + i),
+          city: 'Jakarta',
+          province: 'DKI Jakarta',
+          postalCode: '12345',
+        }),
+        paidAt: ['delivered', 'shipped'].includes(status) ? orderDate : null,
+        createdAt: orderDate,
+        updatedAt: orderDate,
+      },
+    });
+
+    // Create order items
+    for (let j = 0; j < numItems; j++) {
+      const productIdx = (i + j) % createdProducts.length;
+      const product = await db.product.findUnique({ where: { id: createdProducts[productIdx] } });
+      if (product) {
+        const qty = 1 + Math.floor(Math.random() * 2);
+        await db.orderItem.create({
+          data: {
+            orderId: order.id,
+            productId: product.id,
+            productName: product.name,
+            productImage: JSON.parse(product.images)[0] || null,
+            variation: `${['Hitam', 'Putih', 'Navy'][j % 3]} / ${['M', 'L', 'One Size'][j % 3]}`,
+            price: product.price,
+            quantity: qty,
+            subtotal: product.price * qty,
+          },
+        });
+      }
+    }
+    console.log(`  ✓ ${order.orderNumber} - ${status} - Rp ${total.toLocaleString('id-ID')}`);
+  }
+  console.log(`✓ 8 orders created\n`);
+
+  // 7. Create Reviews
+  console.log('⭐ Creating reviews...');
+  const reviewComments = [
+    { rating: 5, title: 'Sangat Puas!', comment: 'Kualitas bahan sangat bagus dan pengiriman cepat. Recommended!' },
+    { rating: 5, title: 'Premium Quality', comment: 'Harga terjangkau dengan kualitas premium. Pasti beli lagi!' },
+    { rating: 4, title: 'Bagus Banget', comment: 'Koleksi lengkap dan modern. Packing rapi dan aman.' },
+    { rating: 5, title: 'Love it!', comment: 'Cocok banget, sesuai ekspektasi. Material nyaman dipakai.' },
+    { rating: 4, title: 'Worth the Price', comment: 'Harga worth it banget untuk kualitas yang didapat.' },
+    { rating: 3, title: 'Cukup Baik', comment: 'Bagus tapi ukuran agak longgar. Overall oke.' },
+  ];
+
+  for (let i = 0; i < 10; i++) {
+    const userIdx = 1 + (i % 4);
+    const productIdx = i % createdProducts.length;
+    const reviewData = reviewComments[i % reviewComments.length];
+    await db.review.create({
+      data: {
+        userId: createdUsers[userIdx],
+        productId: createdProducts[productIdx],
+        ...reviewData,
+        isVerified: Math.random() > 0.3,
+        createdAt: new Date(Date.now() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000),
+      },
+    });
+  }
+  console.log(`✓ 10 reviews created\n`);
+
+  // 8. Create Blog Posts
+  console.log('📝 Creating blog posts...');
+  for (const post of blogPosts) {
+    await db.blogPost.create({ data: post });
+    console.log(`  ✓ ${post.title}`);
+  }
+  console.log(`✓ ${blogPosts.length} blog posts created\n`);
+
+  // 9. Create Vouchers
+  console.log('🎫 Creating vouchers...');
+  for (const v of vouchers) {
+    await db.voucher.create({ data: v });
+    console.log(`  ✓ ${v.code} - ${v.type === 'percentage' ? `${v.value}%` : `Rp ${v.value.toLocaleString('id-ID')}`}`);
+  }
+  console.log(`✓ ${vouchers.length} vouchers created\n`);
+
+  // 10. Create Promos (update per_item productIds)
+  console.log('🎁 Creating promos...');
+  // Get women's fashion and hijab product IDs for WOMENSDAY promo
+  const womenCategory = await db.category.findUnique({ where: { slug: 'fashion-wanita' } });
+  const hijabCategory = await db.category.findUnique({ where: { slug: 'hijab' } });
+  let womenProductIds: string[] = [];
+  if (womenCategory) {
+    const cp1 = await db.categoryProduct.findMany({ where: { categoryId: womenCategory.id }, select: { productId: true } });
+    womenProductIds.push(...cp1.map(c => c.productId));
+  }
+  if (hijabCategory) {
+    const cp2 = await db.categoryProduct.findMany({ where: { categoryId: hijabCategory.id }, select: { productId: true } });
+    womenProductIds.push(...cp2.map(c => c.productId));
+  }
+  // deduplicate
+  womenProductIds = [...new Set(womenProductIds)];
+
+  for (const promo of promos) {
+    const data = { ...promo };
+    if (promo.code === 'WOMENSDAY') {
+      data.productIds = JSON.stringify(womenProductIds);
+    }
+    await db.promo.create({ data });
+    console.log(`  ✓ ${promo.code} - ${promo.name}`);
+  }
+  console.log(`✓ ${promos.length} promos created\n`);
+
+  // 11. Create Flash Sale
+  console.log('⚡ Creating flash sale...');
+  const flashSale = await db.flashSale.create({
+    data: {
+      name: 'Flash Sale Mingguan',
+      startDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+      endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+      isActive: true,
+    },
+  });
+
+  // Add first 4 products as flash sale items
+  for (let i = 0; i < 4 && i < createdProducts.length; i++) {
+    const product = await db.product.findUnique({ where: { id: createdProducts[i] } });
+    if (product) {
+      await db.flashSaleItem.create({
         data: {
+          flashSaleId: flashSale.id,
           productId: product.id,
-          color: variation.color,
-          size: variation.size,
-          sku: variation.sku,
-          stock: variation.stock,
+          salePrice: Math.round(product.price * 0.7), // 30% off
+          maxQty: 20 + Math.floor(Math.random() * 30),
+          soldQty: Math.floor(Math.random() * 10),
         },
       });
     }
   }
-
-  console.log(`   ✅ Created ${Object.keys(products).length} products with variations`);
-
-  // ============================
-  // 3. VOUCHERS
-  // ============================
-  console.log('🎫 Creating vouchers...');
-
-  const now = new Date();
-  const threeMonthsLater = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
-
-  const vouchers = await Promise.all([
-    db.voucher.create({
-      data: {
-        code: 'WELCOME10',
-        type: 'percentage',
-        value: 10,
-        minPurchase: 200000,
-        maxDiscount: 100000,
-        quota: 1000,
-        used: 0,
-        startDate: now,
-        endDate: threeMonthsLater,
-        isActive: true,
-      },
-    }),
-    db.voucher.create({
-      data: {
-        code: 'DISKON50K',
-        type: 'nominal',
-        value: 50000,
-        minPurchase: 300000,
-        quota: 500,
-        used: 0,
-        startDate: now,
-        endDate: threeMonthsLater,
-        isActive: true,
-      },
-    }),
-    db.voucher.create({
-      data: {
-        code: 'GRATISONGKIR',
-        type: 'shipping',
-        value: 15000,
-        quota: 2000,
-        used: 0,
-        startDate: now,
-        endDate: threeMonthsLater,
-        isActive: true,
-      },
-    }),
-  ]);
-
-  console.log(`   ✅ Created ${vouchers.length} vouchers`);
-
-  // ============================
-  // 4. FLASH SALE
-  // ============================
-  console.log('⚡ Creating flash sale...');
-
-  const flashSaleStart = new Date(now.getTime() - 2 * 60 * 60 * 1000); // 2 hours ago
-  const flashSaleEnd = new Date(now.getTime() + 22 * 60 * 60 * 1000); // 22 hours from now
-
-  const flashSale = await db.flashSale.create({
-    data: {
-      name: 'Flash Sale Akhir Pekan',
-      startDate: flashSaleStart,
-      endDate: flashSaleEnd,
-      isActive: true,
-    },
-  });
-
-  // Flash sale items
-  const flashSaleItemsData = [
-    { productId: products['elegant-summer-dress'], salePrice: 299000, maxQty: 20, soldQty: 5 },
-    { productId: products['urban-street-sneakers'], salePrice: 499000, maxQty: 15, soldQty: 3 },
-    { productId: products['rose-gold-watch'], salePrice: 650000, maxQty: 10, soldQty: 2 },
-    { productId: products['crossbody-leather-bag'], salePrice: 399000, maxQty: 15, soldQty: 4 },
-  ];
-
-  for (const item of flashSaleItemsData) {
-    await db.flashSaleItem.create({
-      data: {
-        flashSaleId: flashSale.id,
-        productId: item.productId,
-        salePrice: item.salePrice,
-        maxQty: item.maxQty,
-        soldQty: item.soldQty,
-      },
-    });
-  }
-
-  console.log('   ✅ Created flash sale with 4 items');
-
-  // ============================
-  // 5. USERS
-  // ============================
-  console.log('👥 Creating users...');
-
-  const adminUser = await db.user.create({
-    data: {
-      email: 'admin@luxefashion.com',
-      password: 'admin123',
-      name: 'Admin LUXE Fashion',
-      phone: '081234567890',
-      role: 'admin',
-      memberLevel: 'admin',
-      points: 0,
-      isActive: true,
-    },
-  });
-
-  const customerUser = await db.user.create({
-    data: {
-      email: 'customer@example.com',
-      password: 'customer123',
-      name: 'Sarah Wijaya',
-      phone: '087654321098',
-      avatar: null,
-      role: 'customer',
-      memberLevel: 'gold',
-      points: 2500,
-      isActive: true,
-    },
-  });
-
-  // Customer address
-  await db.address.create({
-    data: {
-      userId: customerUser.id,
-      label: 'Rumah',
-      recipient: 'Sarah Wijaya',
-      phone: '087654321098',
-      address: 'Jl. Sudirman No. 123, Blok A5',
-      city: 'Jakarta Selatan',
-      province: 'DKI Jakarta',
-      postalCode: '12190',
-      isDefault: true,
-    },
-  });
-
-  console.log('   ✅ Created admin and customer users');
-
-  // ============================
-  // 6. REVIEWS
-  // ============================
-  console.log('⭐ Creating reviews...');
-
-  const reviewsData = [
-    {
-      userId: customerUser.id,
-      productId: products['elegant-summer-dress'],
-      rating: 5,
-      title: 'Sangat puas!',
-      comment: 'Bahan dressnya lembut dan adem, cocok banget dipakai di cuaca Indonesia. Warna pastelnya juga cantik. Pengiriman cepat dan packaging rapi. Pasti order lagi!',
-    },
-    {
-      userId: customerUser.id,
-      productId: products['premium-cotton-shirt'],
-      rating: 4,
-      title: 'Kualitas bagus',
-      comment: 'Kemejanya bagus, bahannya tebal tapi tetap nyaman. Hanya saja ukurannya agak longgar, next time pilih size lebih kecil. Overall recommended!',
-    },
-    {
-      userId: customerUser.id,
-      productId: products['urban-street-sneakers'],
-      rating: 5,
-      title: 'Sepatu keren banget',
-      comment: 'Designnya modern dan keren banget. Solnya empuk, nyaman dipakai seharian. Bahan berkualitas, worth it dengan harganya. Sudah rekomendasikan ke teman-teman.',
-    },
-    {
-      userId: customerUser.id,
-      productId: products['instant-hijab-jersey'],
-      rating: 4,
-      title: 'Hijab praktis',
-      comment: 'Warnanya cantik dan bahannya adem. Praktis banget karena instan, tinggal slup langsung rapi. Cuma kadang agak longgar di bagian pipi. Tapi overall suka!',
-    },
-    {
-      userId: customerUser.id,
-      productId: products['crossbody-leather-bag'],
-      rating: 5,
-      title: 'Tas impian',
-      comment: 'Tasnya bagus banget! Kulit sintetisnya terlihat premium dan kuat. Kompartemen dalamnya luas, bisa muat banyak barang. Strapnya adjustable dan nyaman dipakai. Worth every penny!',
-    },
-    {
-      userId: customerUser.id,
-      productId: products['rose-gold-watch'],
-      rating: 4,
-      title: 'Elegan dan feminin',
-      comment: 'Jam tangan rose goldnya cantik banget, elegan dan feminin. Ukurannya pas untuk pergelangan tangan wanita. Movement-nya juga akurat. Box packaging mewah, cocok buat hadiah.',
-    },
-    {
-      userId: customerUser.id,
-      productId: products['hoodie-oversize'],
-      rating: 5,
-      title: 'Hoodie terbaik',
-      comment: 'Bahannya tebal dan hangat, cocok banget buat cuaca dingin atau di ruangan AC. Desain oversizenya kekinian. Sudah beli 3 warna karena suka banget!',
-    },
-    {
-      userId: customerUser.id,
-      productId: products['kids-striped-tee-set'],
-      rating: 5,
-      title: 'Anak saya suka!',
-      comment: 'Kaos anaknya lucu dan bahannya lembut, aman untuk kulit anak. Warna-warnanya cerah dan menarik. Set 3 pcs harganya sangat worth it. Anak saya suka semua warnanya!',
-    },
-  ];
-
-  for (const reviewData of reviewsData) {
-    await db.review.create({
-      data: {
-        ...reviewData,
-        isVerified: true,
-      },
-    });
-  }
-
-  console.log(`   ✅ Created ${reviewsData.length} reviews`);
-
-  // ============================
-  // 7. ORDERS
-  // ============================
-  console.log('📦 Creating orders...');
-
-  // Order 1: Delivered order
-  const order1 = await db.order.create({
-    data: {
-      orderNumber: 'ORD-20240115-001',
-      userId: customerUser.id,
-      status: 'delivered',
-      subtotal: 800000,
-      shippingCost: 15000,
-      discount: 50000,
-      total: 765000,
-      paymentMethod: 'bank_transfer',
-      paymentStatus: 'paid',
-      paidAt: new Date('2024-01-15T10:30:00.000Z'),
-      courier: 'JNE',
-      courierService: 'REG',
-      trackingNumber: 'JNE1234567890',
-      shippingAddress: JSON.stringify({
-        recipient: 'Sarah Wijaya',
-        phone: '087654321098',
-        address: 'Jl. Sudirman No. 123, Blok A5',
-        city: 'Jakarta Selatan',
-        province: 'DKI Jakarta',
-        postalCode: '12190',
-      }),
-      voucherCode: 'DISKON50K',
-      createdAt: new Date('2024-01-15T10:00:00.000Z'),
-    },
-  });
-
-  await db.orderItem.create({
-    data: {
-      orderId: order1.id,
-      productId: products['elegant-summer-dress'],
-      productName: 'Elegant Summer Dress',
-      productImage: '/images/products/dress-1.png',
-      variation: 'Putih / M',
-      price: 450000,
-      quantity: 1,
-      subtotal: 450000,
-    },
-  });
-
-  await db.orderItem.create({
-    data: {
-      orderId: order1.id,
-      productId: products['instant-hijab-jersey'],
-      productName: 'Instant Hijab Jersey',
-      productImage: '/images/products/hijab-1.png',
-      variation: 'Pink / M',
-      price: 120000,
-      quantity: 2,
-      subtotal: 240000,
-    },
-  });
-
-  // Order 2: Shipped order
-  const order2 = await db.order.create({
-    data: {
-      orderNumber: 'ORD-20240118-002',
-      userId: customerUser.id,
-      status: 'shipped',
-      subtotal: 1000000,
-      shippingCost: 20000,
-      discount: 0,
-      total: 1020000,
-      paymentMethod: 'ewallet',
-      paymentStatus: 'paid',
-      paidAt: new Date('2024-01-18T14:15:00.000Z'),
-      courier: 'J&T',
-      courierService: 'EZ',
-      trackingNumber: 'JT9876543210',
-      shippingAddress: JSON.stringify({
-        recipient: 'Sarah Wijaya',
-        phone: '087654321098',
-        address: 'Jl. Gatot Subroto No. 45, Unit B3',
-        city: 'Jakarta Selatan',
-        province: 'DKI Jakarta',
-        postalCode: '12950',
-      }),
-      createdAt: new Date('2024-01-18T14:00:00.000Z'),
-    },
-  });
-
-  await db.orderItem.create({
-    data: {
-      orderId: order2.id,
-      productId: products['urban-street-sneakers'],
-      productName: 'Urban Street Sneakers',
-      productImage: '/images/products/shoes-1.png',
-      variation: 'Putih / 41',
-      price: 650000,
-      quantity: 1,
-      subtotal: 650000,
-    },
-  });
-
-  await db.orderItem.create({
-    data: {
-      orderId: order2.id,
-      productId: products['kaos-polos-premium'],
-      productName: 'Kaos Polos Premium',
-      productImage: '/images/products/shirt-1.png',
-      variation: 'Hitam / L',
-      price: 150000,
-      quantity: 2,
-      subtotal: 300000,
-    },
-  });
-
-  await db.orderItem.create({
-    data: {
-      orderId: order2.id,
-      productId: products['gold-layered-necklace-set'],
-      productName: 'Gold Layered Necklace Set',
-      productImage: '/images/products/acc-1.png',
-      variation: 'Gold / M',
-      price: 250000,
-      quantity: 1,
-      subtotal: 250000,
-    },
-  });
-
-  // Order 3: Processing order
-  const order3 = await db.order.create({
-    data: {
-      orderNumber: 'ORD-20240120-003',
-      userId: customerUser.id,
-      status: 'processing',
-      subtotal: 350000,
-      shippingCost: 15000,
-      discount: 0,
-      total: 365000,
-      paymentMethod: 'cod',
-      paymentStatus: 'pending',
-      courier: 'SiCepat',
-      courierService: 'REG',
-      shippingAddress: JSON.stringify({
-        recipient: 'Sarah Wijaya',
-        phone: '087654321098',
-        address: 'Jl. Sudirman No. 123, Blok A5',
-        city: 'Jakarta Selatan',
-        province: 'DKI Jakarta',
-        postalCode: '12190',
-      }),
-      createdAt: new Date('2024-01-20T09:30:00.000Z'),
-    },
-  });
-
-  await db.orderItem.create({
-    data: {
-      orderId: order3.id,
-      productId: products['hoodie-oversize'],
-      productName: 'Hoodie Oversize',
-      productImage: '/images/products/shirt-1.png',
-      variation: 'Hitam / XL',
-      price: 320000,
-      quantity: 1,
-      subtotal: 320000,
-    },
-  });
-
-  console.log('   ✅ Created 3 sample orders');
-
-  // ============================
-  // 8. WISHLIST
-  // ============================
-  console.log('💖 Creating wishlist...');
-
-  await Promise.all([
-    db.wishlist.create({
-      data: {
-        userId: customerUser.id,
-        productId: products['rose-gold-watch'],
-      },
-    }),
-    db.wishlist.create({
-      data: {
-        userId: customerUser.id,
-        productId: products['crossbody-leather-bag'],
-      },
-    }),
-    db.wishlist.create({
-      data: {
-        userId: customerUser.id,
-        productId: products['blazer-wanita-premium'],
-      },
-    }),
-  ]);
-
-  console.log('   ✅ Created 3 wishlist items');
-
-  // ============================
-  // 9. BLOG POSTS
-  // ============================
-  console.log('📝 Creating blog posts...');
-
-  const blogPosts = await Promise.all([
-    db.blogPost.create({
-      data: {
-        title: 'Trend Fashion 2024: Warna Pastel Dominasi',
-        slug: 'trend-fashion-2024-warna-pastel-dominasi',
-        content: `## Trend Fashion 2024: Warna Pastel Dominasi
-
-Tahun 2024 membawa angin segar dalam dunia fashion dengan dominasi warna-warna pastel yang lembut dan menenangkan. Dari catwalk hingga street style, warna-warna seperti lavender, mint, peach, dan baby blue menjadi pilihan utama para fashionista.
-
-### Mengapa Pastel?
-
-Warna pastel memberikan kesan yang soft dan sophisticated. Tidak hanya terlihat cantik, warna-warna ini juga sangat versatile dan mudah dipadukan dengan outfit sehari-hari. Di era yang penuh dengan kesibukan, warna pastel memberikan visual yang calming dan refreshing.
-
-### Tips Memadukan Warna Pastel
-
-1. **Monochrome Pastel** - Padukan nuansa pastel senada untuk tampilan yang elegan dan harmonis.
-2. **Pastel + Netral** - Kombinasikan dengan warna netral seperti putih, beige, atau abu-abu untuk tampilan yang balanced.
-3. **Bold Accent** - Tambahkan satu aksen bold seperti merah atau hitam untuk kontras yang menarik.
-4. **Aksesoris Pastel** - Mulai dari kalung, tas, hingga hijab pastel bisa menjadi statement piece.
-
-### Warna Pastel yang Wajib Dimiliki
-
-- **Lavender** - Warna ungu muda yang romantis dan feminin
-- **Mint Green** - Segar dan modern, cocok untuk semua skin tone
-- **Peach** - Warm dan welcoming, memberikan glow pada wajah
-- **Baby Blue** - Klasik dan timeless, selalu terlihat stylish
-- **Blush Pink** - Feminin dan lembut, favorit banyak wanita
-
-### Penutup
-
-Trend warna pastel di 2024 bukan hanya tentang mengikuti fashion, tetapi juga tentang mengekspresikan kepribadian yang lembut namun tetap stylish. Jangan takut untuk bereksperimen dengan warna-warna cantik ini!`,
-        excerpt: 'Tahun 2024 membawa angin segar dengan dominasi warna pastel. Simak tips dan inspirasi padu padan warna pastel yang stylish.',
-        coverImage: '/images/blog/blog-1.png',
-        author: 'Tim LUXE Fashion',
-        metaTitle: 'Trend Fashion 2024: Warna Pastel Dominasi - LUXE Fashion Blog',
-        metaDesc: 'Simak trend fashion 2024 dengan dominasi warna pastel. Tips padu padan dan inspirasi outfit pastel yang stylish.',
-        isPublished: true,
-      },
-    }),
-    db.blogPost.create({
-      data: {
-        title: 'Tips Mix and Match Outfit Kantor',
-        slug: 'tips-mix-and-match-outfit-kantor',
-        content: `## Tips Mix and Match Outfit Kantor
-
-Tampil stylish di kantor bukan berarti harus ribet! Dengan mix and match yang tepat, kamu bisa tampil profesional sekaligus fashionable setiap hari. Berikut tips yang bisa kamu praktikkan:
-
-### 1. Investasi pada Basic Items
-
-Mulailah dengan mengoleksi basic items yang berkualitas:
-- **Kemeja putih** - Must have item untuk pria maupun wanita
-- **Blazer** - Outerwear yang bisa elevate tampilan apa pun
-- **Celana formal hitam** - Classic dan selalu aman
-- **Rok midi** - Feminin dan profesional
-
-### 2. Play with Colors
-
-Siapa bilang outfit kantor harus membosankan? Cobalah paduan warna-warna ini:
-- Navy + Putih = Classic combo yang selalu works
-- Blush + Abu-abu = Soft dan sophisticated
-- Hitam + Gold accent = Elegant dan powerful
-
-### 3. Layering adalah Kunci
-
-Mastering layering bisa membuat outfit sederhana terlihat lebih kompleks:
-- Blazer atas kemeja
-- Cardigan atas dress
-- Vest atas kaos
-
-### 4. Aksesoris yang Tepat
-
-Aksesoris bisa membuat perbedaan besar:
-- **Jam tangan** - Memberikan kesan profesional
-- **Kalung simple** - Menambah elegan tanpa berlebihan
-- **Tas structured** - Terlihat lebih organized
-- **Scarf** - Bisa menjadi statement piece
-
-### 5. Sepatu yang Nyaman
-
-Investasi pada sepatu kantor yang nyaman:
-- Loafers atau oxford untuk pria
-- Low heels atau flats untuk wanita
-- Pilih warna netral: hitam, coklat, navy
-
-### 6. Perhatikan Fabric
-
-Bahan pakaian sangat mempengaruhi penampilan:
-- Pilih katun atau linen untuk cuaca panas
-- Pilih wool atau cashmere untuk cuaca dingin
-- Hindari bahan yang mudah kusut
-
-Dengan tips ini, kamu bisa tampil fashionable ke kantor setiap hari tanpa effort berlebihan!`,
-        excerpt: 'Tampil stylish di kantor setiap hari dengan tips mix and match yang mudah diikuti. Dari basic items hingga aksesoris yang tepat.',
-        coverImage: '/images/blog/blog-2.png',
-        author: 'Tim LUXE Fashion',
-        metaTitle: 'Tips Mix and Match Outfit Kantor - LUXE Fashion Blog',
-        metaDesc: 'Tips mix and match outfit kantor untuk tampil profesional dan stylish setiap hari.',
-        isPublished: true,
-      },
-    }),
-    db.blogPost.create({
-      data: {
-        title: 'Panduan Ukuran Pakaian Online',
-        slug: 'panduan-ukuran-pakaian-online',
-        content: `## Panduan Ukuran Pakaian Online
-
-Beli pakaian online sering kali membuat khawatir karena tidak bisa mencoba langsung. Tapi tenang! Dengan panduan ukuran yang tepat, kamu bisa mendapatkan pakaian yang pas meskipun belanja online.
-
-### Cara Mengukur Tubuh dengan Benar
-
-Sebelum belanja, pastikan kamu tahu ukuran tubuhmu:
-
-**Untuk Wanita:**
-1. **Lingkar Dada** - Ukur di bagian terlebar dada
-2. **Lingkar Pinggang** - Ukur di bagian terkecil pinggang
-3. **Lingkar Pinggul** - Ukur di bagian terlebar pinggul
-4. **Panjang Baju** - Dari pundak ke bawah sesuai selera
-
-**Untuk Pria:**
-1. **Lingkar Dada** - Ukur di bagian terlebar dada
-2. **Lingkar Pinggang** - Ukur di bagian pinggang
-3. **Lebar Bahu** - Dari ujung bahu kiri ke kanan
-4. **Panjang Baju** - Dari pundak ke bawah
-
-### Panduan Ukuran Umum
-
-| Size | Lingkar Dada (cm) | Lingkar Pinggang (cm) |
-|------|-------------------|----------------------|
-| XS   | 80-84             | 60-64                |
-| S    | 84-88             | 64-68                |
-| M    | 88-92             | 68-72                |
-| L    | 92-96             | 72-76                |
-| XL   | 96-100            | 76-80                |
-
-### Tips untuk Hasil yang Akurat
-
-1. **Ukur dengan pita ukur yang flexible**
-2. **Ukur tanpa pakaian tebal** untuk hasil akurat
-3. **Berdiri tegak dan rileks** saat mengukur
-4. **Ukur 2-3 kali** dan ambil rata-rata
-5. **Perhatikan size chart setiap brand** karena bisa berbeda
-
-### Jika Ukuran di Antara Dua Size
-
-Jika hasil ukuranmu di antara dua size:
-- Untuk pakaian yang seharusnya **loose/oversize**, pilih **size yang lebih besar**
-- Untuk pakaian yang seharusnya **fitted**, pilih **size yang lebih kecil**
-- Saat ragu, selalu **pilih size yang lebih besar** karena lebih mudah di-alter
-
-### Kebijakan Pengembalian LUXE Fashion
-
-Di LUXE Fashion, kami menyediakan:
-- ✅ Penukaran gratis dalam 7 hari
-- ✅ Panduan ukuran detail di setiap produk
-- ✅ Customer service siap membantu konsultasi ukuran
-
-Jangan ragu untuk menghubungi customer service kami jika butuh bantuan dalam memilih ukuran yang tepat!`,
-        excerpt: 'Panduan lengkap mengukur tubuh dan memilih ukuran pakaian online yang tepat. Tips agar belanja online tanpa khawatir salah size.',
-        coverImage: '/images/blog/blog-3.png',
-        author: 'Tim LUXE Fashion',
-        metaTitle: 'Panduan Ukuran Pakaian Online - LUXE Fashion Blog',
-        metaDesc: 'Panduan lengkap cara mengukur tubuh dan memilih ukuran pakaian yang tepat saat belanja online.',
-        isPublished: true,
-      },
-    }),
-  ]);
-
-  console.log(`   ✅ Created ${blogPosts.length} blog posts`);
-
-  // ============================
-  // 10. ANALYTICS
-  // ============================
-  console.log('📊 Creating analytics data...');
-
-  const analyticsData = [];
-  for (let i = 6; i >= 0; i--) {
-    const date = new Date();
-    date.setDate(date.getDate() - i);
+  console.log(`  ✓ Flash Sale "${flashSale.name}" with 4 items\n`);
+
+  // 12. Create Analytics (last 30 days)
+  console.log('📊 Creating analytics...');
+  for (let i = 29; i >= 0; i--) {
+    const date = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
     const dateStr = date.toISOString().split('T')[0];
-
-    analyticsData.push({
-      date: dateStr,
-      visitors: Math.floor(Math.random() * 500) + 300,
-      orders: Math.floor(Math.random() * 30) + 10,
-      revenue: Math.floor(Math.random() * 5000000) + 2000000,
-      pageViews: Math.floor(Math.random() * 2000) + 1000,
-    });
-  }
-
-  for (const data of analyticsData) {
     await db.analytics.create({
-      data,
+      data: {
+        date: dateStr,
+        visitors: 50 + Math.floor(Math.random() * 200),
+        orders: 2 + Math.floor(Math.random() * 15),
+        revenue: 500000 + Math.floor(Math.random() * 3000000),
+        pageViews: 200 + Math.floor(Math.random() * 800),
+      },
     });
   }
+  console.log(`✓ 30 days analytics created\n`);
 
-  console.log(`   ✅ Created ${analyticsData.length} days of analytics data`);
+  // 13. StoreSettings is auto-created by API, but let's ensure it exists
+  console.log('🏪 Ensuring store settings...');
+  const existingSettings = await db.storeSettings.count();
+  if (existingSettings === 0) {
+    await db.storeSettings.create({
+      data: {
+        storeName: 'LUXE Fashion',
+        storeTagline: 'Tampil Stylish Setiap Hari',
+        storeEmail: 'hello@luxefashion.com',
+        storePhone: '+62 812 3456 7890',
+        whatsapp: '+62 812 3456 7890',
+        storeAddress: 'Jl. Fashion Boulevard No. 88',
+        storeCity: 'Jakarta Selatan',
+        storeProvince: 'DKI Jakarta',
+        storePostalCode: '12345',
+        instagram: 'https://instagram.com/luxefashion',
+        facebook: 'https://facebook.com/luxefashion',
+        tiktok: 'https://tiktok.com/@luxefashion',
+        metaTitle: 'LUXE Fashion - Toko Fashion Online Terlengkap',
+        metaDesc: 'Belanja fashion terlengkap dengan harga terbaik. COD, pengiriman cepat, dan banyak promo menarik.',
+        metaKeywords: 'fashion, baju, pakaian, online shop, jakarta',
+        shippingMethods: JSON.stringify([
+          { id: 'jne-reg', courier: 'JNE', service: 'Reguler', price: 18000, eta: '2-3 hari' },
+          { id: 'jne-yes', courier: 'JNE', service: 'YES', price: 32000, eta: '1 hari' },
+          { id: 'jnt-ez', courier: 'J&T', service: 'EZ', price: 15000, eta: '2-3 hari' },
+          { id: 'sicepat-reg', courier: 'SiCepat', service: 'Reguler', price: 16000, eta: '2-3 hari' },
+        ]),
+        paymentMethods: JSON.stringify([
+          { id: 'bca', name: 'BCA Transfer', type: 'bank' },
+          { id: 'mandiri', name: 'Mandiri Transfer', type: 'bank' },
+          { id: 'bri', name: 'BRI Transfer', type: 'bank' },
+          { id: 'gopay', name: 'GoPay', type: 'ewallet' },
+          { id: 'ovo', name: 'OVO', type: 'ewallet' },
+          { id: 'shopeepay', name: 'ShopeePay', type: 'ewallet' },
+          { id: 'cod', name: 'COD (Bayar di Tempat)', type: 'cod' },
+        ]),
+        bankName: 'Bank Central Asia',
+        bankAccount: '1234567890',
+        bankHolder: 'PT LUXE Fashion Indonesia',
+        primaryColor: '#f43f5e',
+        originDistrictName: 'Kebayoran Baru',
+        originDistrictCode: '317407',
+        originVillageName: 'Selong',
+        originVillageCode: '3174071004',
+      },
+    });
+    console.log('  ✓ Store settings created');
+  } else {
+    console.log('  ✓ Store settings already exist');
+  }
+  console.log('');
 
-  // ============================
-  // VERIFICATION
-  // ============================
-  console.log('\n🔍 Verifying seed data...');
-
-  const categoryCount = await db.category.count();
-  const productCount = await db.product.count();
-  const variationCount = await db.productVariation.count();
-  const voucherCount = await db.voucher.count();
-  const flashSaleItemCount = await db.flashSaleItem.count();
-  const userCount = await db.user.count();
-  const reviewCount = await db.review.count();
-  const orderCount = await db.order.count();
-  const orderItemCount = await db.orderItem.count();
-  const blogPostCount = await db.blogPost.count();
-  const analyticsCount = await db.analytics.count();
-  const wishlistCount = await db.wishlist.count();
-
-  console.log('\n📊 Seed Summary:');
-  console.log(`   Categories:        ${categoryCount}`);
-  console.log(`   Products:          ${productCount}`);
-  console.log(`   Variations:        ${variationCount}`);
-  console.log(`   Vouchers:          ${voucherCount}`);
-  console.log(`   Flash Sale Items:  ${flashSaleItemCount}`);
-  console.log(`   Users:             ${userCount}`);
-  console.log(`   Reviews:           ${reviewCount}`);
-  console.log(`   Orders:            ${orderCount}`);
-  console.log(`   Order Items:       ${orderItemCount}`);
-  console.log(`   Blog Posts:        ${blogPostCount}`);
-  console.log(`   Analytics Days:    ${analyticsCount}`);
-  console.log(`   Wishlist Items:    ${wishlistCount}`);
-
-  console.log('\n✅ Seeding completed successfully!');
+  console.log('🎉 Seed completed successfully!');
+  console.log('========================================');
+  console.log(`  Categories:  ${categories.length}`);
+  console.log(`  Products:    ${products.length}`);
+  console.log(`  Users:       ${users.length}`);
+  console.log(`  Orders:      8`);
+  console.log(`  Reviews:     10`);
+  console.log(`  Blog Posts:  ${blogPosts.length}`);
+  console.log(`  Vouchers:    ${vouchers.length}`);
+  console.log(`  Promos:      ${promos.length}`);
+  console.log(`  Flash Sale:  1 (4 items)`);
+  console.log(`  Analytics:   30 days`);
+  console.log('========================================');
 }
 
-main()
+seed()
   .catch((e) => {
     console.error('❌ Seed failed:', e);
     process.exit(1);

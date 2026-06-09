@@ -166,9 +166,9 @@ model Order {
 }
 
 model OrderItem {
-  id           String  @id @default(cuid())
+  id           String   @id @default(cuid())
   orderId      String
-  productId    String
+  productId    String?
   productName  String
   productImage String?
   variation    String?
@@ -177,7 +177,7 @@ model OrderItem {
   subtotal     Float
 
   order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id])
+  product Product? @relation(fields: [productId], references: [id])
 
   @@index([orderId])
   @@index([productId])
