@@ -1,0 +1,325 @@
+openapi: 3.0.0
+info:
+  title: Api Cek Ongkos Kirim
+  description: >-
+    Complete API collection for shipping cost calculation between Indonesian villages.
+
+
+    ## Features
+
+    - Calculate shipping costs between villages
+
+    - Multiple courier options (JNE, SiCepat, SAP, etc.)
+
+    - Automatic caching for faster responses
+
+    - Weight-based pricing
+
+    - Delivery time estimation
+
+    - Zero-price courier filtering
+
+
+    ## Authentication
+
+    All requests require an API key in the `x-api-co-id` header.
+
+
+    ## Base URL
+
+    ```
+    https://use.api.co.id/expedition
+    ```
+
+
+    ## Village Codes
+
+    Village codes can be found using the [Api Regional Wilayah Indonesia](https://api.co.id/indonesia-regional-api/). Use the `/regional/indonesia/villages` endpoint to search for villages and get their 10-digit codes.
+
+
+    ## Requirements
+
+    - Weight must be greater than 0
+
+
+  version: 1.0.0
+servers:
+  - url: https://use.api.co.id
+tags:
+  - name: Shipping Cost
+    description: Shipping cost calculation endpoints for expedition services.
+paths:
+  /expedition/shipping-cost:
+    get:
+      tags:
+        - Shipping Cost
+      summary: Get Shipping Cost
+      description: >-
+        Calculate shipping cost from origin village to destination village.
+
+
+        ### Query Parameters
+
+        - `origin_village_code` (required): Origin village code (10 digits)
+
+        - `destination_village_code` (required): Destination village code (10 digits)
+
+        - `weight` (required): Package weight in kilograms (must be greater than 0)
+
+
+        ### Finding Village Codes
+
+        Village codes can be found using the [Api Regional Wilayah Indonesia](https://api.co.id/indonesia-regional-api/). Use the `/regional/indonesia/villages` endpoint to search for villages and get their 10-digit codes.
+
+
+        ### Response
+
+        Returns available courier options with:
+
+        - Courier code and name
+
+        - Shipping price
+
+        - Weight
+
+        - Delivery time estimation
+
+        - Only couriers with price > 0 are returned
+
+
+        ### Notes
+
+        - Zero-price couriers are automatically filtered out
+      parameters:
+        - name: x-api-co-id
+          in: header
+          schema:
+            type: string
+          description: Your API key for authentication
+          required: true
+          example: '{{api_key}}'
+        - name: origin_village_code
+          in: query
+          schema:
+            type: string
+            pattern: '^\d{10}$'
+          required: true
+          description: Origin village code - Pademangan, Jakarta (10 digits). Find village codes at https://api.co.id/indonesia-regional-api/
+          example: '3172051003'
+        - name: destination_village_code
+          in: query
+          schema:
+            type: string
+            pattern: '^\d{10}$'
+          required: true
+          description: Destination village code - Bojongloa, Rancaecek, Bandung (10 digits). Find village codes at https://api.co.id/indonesia-regional-api/
+          example: '3204282004'
+        - name: weight
+          in: query
+          schema:
+            type: number
+            minimum: 0.01
+            exclusiveMinimum: true
+          required: true
+          description: Package weight in kilograms (must be > 0)
+          example: 1
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  timestamp:
+                    type: string
+                    example: '2026-02-13 15:49:20'
+                  result:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        courier_code:
+                          type: string
+                          example: JNE
+                        courier_name:
+                          type: string
+                          example: JNE Express
+                        price:
+                          type: number
+                          example: 12000
+                        weight:
+                          type: number
+                          example: 1
+                        estimation:
+                          type: string
+                          nullable: true
+                          example: '1 - 2 days'
+              examples:
+                success:
+                  summary: Success - Pademangan Jakarta to Bojongloa Rancaecek Bandung
+                  value:
+                    status: success
+                    timestamp: '2026-02-13 15:49:20'
+                    result:
+                      - courier_code: JNE
+                        courier_name: JNE Express
+                        price: 12000
+                        weight: 1
+                        estimation: '1 - 2 days'
+                      - courier_code: JNECargo
+                        courier_name: JNE Cargo
+                        price: 45000
+                        weight: 1
+                        estimation: '1 - 2 days'
+                      - courier_code: SiCepat
+                        courier_name: SiCepat Express
+                        price: 11000
+                        weight: 1
+                        estimation: '2 - 3 Days'
+                      - courier_code: SiCepatCargo
+                        courier_name: SiCepat Cargo
+                        price: 40000
+                        weight: 1
+                        estimation: '2 - 3 Days'
+                      - courier_code: SAP
+                        courier_name: SAP Express
+                        price: 10500
+                        weight: 1
+                        estimation: '2 - 4 days'
+                      - courier_code: SAPLite
+                        courier_name: SAP Lite
+                        price: 11500
+                        weight: 1
+                        estimation: '2 - 4 days'
+                      - courier_code: SapCargo
+                        courier_name: SAP Cargo
+                        price: 35000
+                        weight: 1
+                        estimation: '2 - 4 days'
+                      - courier_code: iDexpress
+                        courier_name: iDexpress
+                        price: 9000
+                        weight: 1
+                        estimation: null
+                      - courier_code: iDlite
+                        courier_name: iDlite
+                        price: 9000
+                        weight: 1
+                        estimation: null
+                      - courier_code: JT
+                        courier_name: J&T Express
+                        price: 11000
+                        weight: 1
+                        estimation: null
+                      - courier_code: lion
+                        courier_name: Lion Parcel
+                        price: 13020
+                        weight: 1
+                        estimation: '2 - 3 Hari'
+                      - courier_code: iDexpressCargo
+                        courier_name: iDexpress Cargo
+                        price: 35000
+                        weight: 1
+                        estimation: null
+                      - courier_code: anteraja
+                        courier_name: AnterAja
+                        price: 14200
+                        weight: 1
+                        estimation: '1-2 Day'
+                      - courier_code: paxel
+                        courier_name: Paxel
+                        price: 0
+                        weight: 1
+                        estimation: null
+                      - courier_code: Ninja
+                        courier_name: Ninja Express
+                        price: 11000
+                        weight: 1
+                        estimation: null
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  is_success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+              examples:
+                missingParameters:
+                  summary: Error - Missing Parameters
+                  value:
+                    is_success: false
+                    message: origin_village_code is required
+                invalidWeight:
+                  summary: Error - Invalid Weight
+                  value:
+                    is_success: false
+                    message: weight must be greater than 0
+                villageNotSupported:
+                  summary: Error - Village Not Supported
+                  value:
+                    is_success: false
+                    message: This village was not supported yet, please open ticket to activate this village
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  is_success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+              examples:
+                villageNotFound:
+                  summary: Error - Village Not Found
+                  value:
+                    is_success: false
+                    message: From village not found
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  is_success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+              examples:
+                missingApiKey:
+                  summary: Missing API Key
+                  value:
+                    is_success: false
+                    message: 'Missing API key in x-api-co-id header'
+        '429':
+          description: Too Many Requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  is_success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+              examples:
+                rateLimitExceeded:
+                  summary: Rate Limit Exceeded
+                  value:
+                    is_success: false
+                    message: 'Rate limit exceeded. Please try again later'
+
