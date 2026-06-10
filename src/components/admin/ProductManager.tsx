@@ -112,13 +112,18 @@ export default function ProductManager() {
   const [inlineStock, setInlineStock] = useState<Record<string, string>>({});
 
   // Fetch products
-  const { data: products, isLoading } = useQuery<Product[]>({
+  const { data: productsData, isLoading } = useQuery<{
+    products: Product[];
+    total: number;
+    pages: number;
+  }>({
     queryKey: ['admin-products', search, statusFilter],
     queryFn: () =>
       fetch(
         `/api/products?admin=true&search=${search}&status=${statusFilter}&limit=100`
       ).then((r) => r.json()),
   });
+  const products = productsData?.products || [];
 
   // Fetch categories
   const { data: categories } = useQuery<Category[]>({
@@ -133,7 +138,10 @@ export default function ProductManager() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
-      }).then((r) => r.json()),
+      }).then((r) => {
+        if (!r.ok) throw new Error('Failed to create');
+        return r.json();
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
       setAddDialogOpen(false);
@@ -146,11 +154,14 @@ export default function ProductManager() {
   // Update product mutation
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: ProductFormData }) =>
-      fetch(`/api/products?id=${id}`, {
+      fetch(`/api/products/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
-      }).then((r) => r.json()),
+      }).then((r) => {
+        if (!r.ok) throw new Error('Failed to update');
+        return r.json();
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
       setEditDialogOpen(false);
@@ -164,7 +175,10 @@ export default function ProductManager() {
   // Delete product mutation
   const deleteMutation = useMutation({
     mutationFn: (id: string) =>
-      fetch(`/api/products?id=${id}`, { method: 'DELETE' }).then((r) => r.json()),
+      fetch(`/api/products/${id}`, { method: 'DELETE' }).then((r) => {
+        if (!r.ok) throw new Error('Failed to delete');
+        return r.json();
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
       setDeleteDialogOpen(false);
@@ -177,11 +191,14 @@ export default function ProductManager() {
   // Update stock mutation
   const updateStockMutation = useMutation({
     mutationFn: ({ id, stock }: { id: string; stock: number }) =>
-      fetch(`/api/products?id=${id}`, {
+      fetch(`/api/products/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ stock }),
-      }).then((r) => r.json()),
+      }).then((r) => {
+        if (!r.ok) throw new Error('Failed to update stock');
+        return r.json();
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
       toast.success('Stock updated');
@@ -244,7 +261,7 @@ export default function ProductManager() {
         <div>
           <h3 className="text-lg font-semibold text-gray-900">Products</h3>
           <p className="text-sm text-gray-500">
-            {products?.length || 0} products total
+            {productsData?.total || products.length} products total
           </p>
         </div>
         <Button

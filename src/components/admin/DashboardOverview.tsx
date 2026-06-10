@@ -43,15 +43,23 @@ export default function DashboardOverview({ onNavigateOrders, onNavigateProducts
     queryFn: () => fetch('/api/orders?limit=5&sort=latest').then((r) => r.json()),
   });
 
-  const { data: topProducts, isLoading: productsLoading } = useQuery<Product[]>({
+  const { data: topProductsData, isLoading: productsLoading } = useQuery<{
+    products: Product[];
+    total: number;
+  }>({
     queryKey: ['dashboard-top-products'],
-    queryFn: () => fetch('/api/products?limit=5&sort=best-selling').then((r) => r.json()),
+    queryFn: () => fetch('/api/products?admin=true&limit=5&sort=best-selling').then((r) => r.json()),
   });
+  const topProducts = topProductsData?.products || [];
 
-  const { data: lowStockProducts, isLoading: lowStockLoading } = useQuery<Product[]>({
+  const { data: lowStockData, isLoading: lowStockLoading } = useQuery<{
+    products: Product[];
+    total: number;
+  }>({
     queryKey: ['dashboard-low-stock'],
-    queryFn: () => fetch('/api/products?lowStock=true&limit=5').then((r) => r.json()),
+    queryFn: () => fetch('/api/products?admin=true&lowStock=true&limit=5').then((r) => r.json()),
   });
+  const lowStockProducts = lowStockData?.products || [];
 
   const statCards = [
     {

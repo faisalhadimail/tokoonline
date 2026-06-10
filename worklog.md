@@ -89,3 +89,26 @@ Stage Summary:
 - Full Homepage Settings admin feature built and verified
 - Files created/modified: HomepageSettings.tsx (new), AdminPage.tsx, AdminLayout.tsx, HomePage.tsx, settings/route.ts, seed.ts, schema.prisma
 - All settings persisted to database and read dynamically by storefront homepage
+
+---
+Task ID: 1
+Agent: main
+Task: Fix admin products page not showing products from database + add full CRUD API
+
+Work Log:
+- Investigated disconnect: API GET /api/products hardcoded `isActive: true` filter, ignoring `admin=true` param
+- Admin ProductManager.tsx used `useQuery<Product[]>` but API returns `{ products: [], total, pages }` — type mismatch
+- No POST/PUT/DELETE/PATCH handlers existed for product CRUD operations
+- Dashboard queries also had same data extraction issue
+- Fixed GET /api/products/route.ts: Added `admin=true` support (removes isActive filter), `status` param (active/inactive/featured/preorder), `lowStock` filter, `best-selling` sort by orderItems count
+- Added POST handler for creating products with category connection
+- Updated /api/products/[id]/route.ts: Added PUT (full update), PATCH (partial update/stock), DELETE handlers
+- Fixed ProductManager.tsx: Changed to `useQuery<{products, total, pages}>` with proper extraction, fixed mutation URLs to use `/api/products/${id}` pattern
+- Fixed DashboardOverview.tsx: Same data extraction fix for top products and low stock queries
+
+Stage Summary:
+- Admin products page now loads all 16 products from database correctly
+- Full CRUD operations supported: Create, Read, Update, Delete, Stock update
+- Status filter (All/Active/Inactive/Featured/Preorder) works server-side
+- Dashboard Top Products and Low Stock alerts display correctly
+- All changes pass ESLint
