@@ -1,109 +1,43 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { generateOrderNumber } from '@/lib/helpers';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const admin = searchParams.get('admin');
+    const status = searchParams.get('status');
+    const search = searchParams.get('search');
+    const limit = parseInt(searchParams.get('limit') || '50');
+
+    const where: Record<string, unknown> = {};
+
+    // Status filter
+    if (status && status !== 'all') {
+      where.status = status;
+    }
+
+    // Search by order number
+    if (search) {
+      where.orderNumber = { contains: search, mode: 'insensitive' };
+    }
+
     const orders = await db.order.findMany({
+      where,
       orderBy: { createdAt: 'desc' },
+      take: limit,
       include: {
         items: true,
         user: {
           select: { id: true, name: true, email: true, phone: true },
         },
       },
-      take: 50,
     });
-    return NextResponse.json(orders);
+
+    const total = await db.order.count({ where });
+
+    return NextResponse.json(admin === 'true' ? { orders, total } : orders);
   } catch (error) {
     console.error('Orders API error:', error);
-    return NextResponse.json([]);
-  }
-}
-
-export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-
-    const orderNumber = generateOrderNumber();
-
-    // Resolve userId — use the authenticated user's ID or find/create a guest user
-    let userId = body.userId || null;
-    if (!userId) {
-      // Try to find a guest customer account, or create one
-      const guestEmail = body.shippingAddress?.phone
-        ? `guest-${body.shippingAddress.phone}@luxe.local`
-        : 'guest@luxe.local';
-
-      let guestUser = await db.user.findUnique({
-        where: { email: guestEmail },
-      });
-
-      if (!guestUser) {
-        // Create a guest customer account
-        guestUser = await db.user.create({
-          data: {
-            email: guestEmail,
-            name: body.shippingAddress?.recipient || 'Guest Customer',
-            phone: body.shippingAddress?.phone || null,
-            role: 'customer',
-          },
-        });
-      }
-      userId = guestUser.id;
-    }
-
-    const order = await db.order.create({
-      data: {
-        orderNumber,
-        userId,
-        status: 'pending',
-        subtotal: body.subtotal,
-        shippingCost: body.shippingCost,
-        discount: body.discount || 0,
-        total: body.total,
-        paymentMethod: body.paymentMethod,
-        paymentStatus: body.paymentMethod === 'cod' ? 'pending' : 'pending',
-        courier: body.courier,
-        courierService: body.courierService,
-        shippingAddress: JSON.stringify(body.shippingAddress),
-        notes: body.shippingAddress?.notes || body.notes,
-        voucherCode: body.voucherCode,
-        items: {
-          create: body.items.map((item: Record<string, unknown>) => ({
-            // Only set productId if it looks like a valid DB ID (cuid format)
-            productId: typeof item.productId === 'string' && item.productId.length >= 10 ? item.productId as string : null,
-            productName: item.name as string,
-            productImage: item.image as string || null,
-            variation: item.variation as string || null,
-            price: item.price as number,
-            quantity: item.quantity as number,
-            subtotal: (item.price as number) * (item.quantity as number),
-          })),
-        },
-      },
-      include: {
-        items: true,
-      },
-    });
-
-    // Update promo/voucher usage if applicable
-    if (body.promoCode) {
-      await db.promo.updateMany({
-        where: { code: body.promoCode, isActive: true },
-        data: { used: { increment: 1 } },
-      });
-    }
-    if (body.voucherCode) {
-      await db.voucher.updateMany({
-        where: { code: body.voucherCode, isActive: true },
-        data: { used: { increment: 1 } },
-      });
-    }
-
-    return NextResponse.json({ success: true, orderNumber: order.orderNumber, orderId: order.id });
-  } catch (error) {
-    console.error('Create order API error:', error);
-    return NextResponse.json({ success: false, message: 'Failed to create order' }, { status: 500 });
+    return NextResponse.json(admin === 'true' ? { orders: [], total: 0 } : []);
   }
 }

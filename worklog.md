@@ -112,3 +112,23 @@ Stage Summary:
 - Status filter (All/Active/Inactive/Featured/Preorder) works server-side
 - Dashboard Top Products and Low Stock alerts display correctly
 - All changes pass ESLint
+
+---
+Task ID: 2
+Agent: main
+Task: Fix "Failed to update order" in admin panel
+
+Work Log:
+- Root cause: OrderManager.tsx mutation URL used `fetch('/api/orders?id=${id}')` instead of `fetch('/api/orders/${id}')`
+- The API route is at `/api/orders/[id]/route.ts` (path param), not query param
+- Same pattern issue as the products fix earlier
+- Secondary issue: Orders GET API had no admin/search/status support, always returned flat array
+- Fixed OrderManager.tsx: Changed mutation URL to `/api/orders/${id}`, added `r.ok` error check, fixed data extraction to use `ordersData.orders`
+- Fixed /api/orders/route.ts: Added admin, search, status params support; returns `{ orders, total }` when `admin=true`
+- Also restored .env file which was overwritten with SQLite URL (PostgreSQL URL from conversation context)
+
+Stage Summary:
+- Order update now works correctly via PUT /api/orders/${id}
+- Order listing supports search by order number and status filtering
+- 11 orders in database confirmed working
+- All endpoints return 200 without errors

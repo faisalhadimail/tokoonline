@@ -76,13 +76,17 @@ export default function OrderManager() {
   const [adminNotes, setAdminNotes] = useState('');
 
   // Fetch orders
-  const { data: orders, isLoading } = useQuery<Order[]>({
+  const { data: ordersData, isLoading } = useQuery<{
+    orders: Order[];
+    total: number;
+  }>({
     queryKey: ['admin-orders', search, statusFilter],
     queryFn: () =>
       fetch(
         `/api/orders?admin=true&search=${search}&status=${statusFilter}&limit=100`
       ).then((r) => r.json()),
   });
+  const orders = ordersData?.orders || [];
 
   // Update order mutation
   const updateOrderMutation = useMutation({
@@ -93,11 +97,14 @@ export default function OrderManager() {
       id: string;
       data: { status?: string; trackingNumber?: string; adminNotes?: string };
     }) =>
-      fetch(`/api/orders?id=${id}`, {
+      fetch(`/api/orders/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
-      }).then((r) => r.json()),
+      }).then((r) => {
+        if (!r.ok) throw new Error('Failed to update order');
+        return r.json();
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
       toast.success('Order updated successfully');
@@ -146,7 +153,7 @@ export default function OrderManager() {
         <div>
           <h3 className="text-lg font-semibold text-gray-900">Orders</h3>
           <p className="text-sm text-gray-500">
-            {orders?.length || 0} orders total
+            {ordersData?.total || orders.length} orders total
           </p>
         </div>
         <Button variant="outline" onClick={handleExport}>
